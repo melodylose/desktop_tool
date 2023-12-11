@@ -1,0 +1,47 @@
+{
+  "name": "electron_wrapper",
+  "productName": "electron_wrapper",
+  "version": "1.0.0",
+  "description": "My Electron application description",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "pack": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "keywords": [],
+  "author": {
+    "name": "daniel",
+    "email": "daniel@gmail.com"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.1.0",
+    "@electron-forge/maker-deb": "^7.1.0",
+    "@electron-forge/maker-rpm": "^7.1.0",
+    "@electron-forge/maker-squirrel": "^7.1.0",
+    "@electron-forge/maker-zip": "^7.1.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.1.0",
+    "electron": "27.1.0"
+  },
+  "build": {
+    "appId": "electron_app",
+    "mac": {
+      "category": "test"
+    }
+  },
+  "dependencies": {
+    "bootstrap-icons": "^1.11.2",
+    "bootstrap5-toggle": "^5.0.6",
+    "electron-log": "^5.0.1",
+    "electron-simple-toast": "^0.5.3",
+    "electron-squirrel-startup": "^1.0.0",
+    "fast-glob": "^3.3.2",
+    "fs": "^0.0.1-security",
+    "jquery": "^3.7.1",
+    "jsmodbus": "^4.0.6",
+    "knex": "^3.1.0",
+    "sqlite3": "^5.1.6",
+    "toastify-js": "^1.12.0"
+  }
+}
