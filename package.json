@@ -31,6 +31,7 @@
     }
   },
   "dependencies": {
+    "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.2",
     "bootstrap5-toggle": "^5.0.6",
     "electron-log": "^5.0.1",

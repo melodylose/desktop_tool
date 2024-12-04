@@ -28,15 +28,21 @@ if (require('electron-squirrel-startup')) {
 }
 
 const createWindow = async () => {
-  // Create the browser window.
+  // Create the browser window with 16:9 aspect ratio
+  const width = 1280; // 基礎寬度
+  const height = Math.round(width * (9/16)); // 計算16:9的高度
+
+  // 創建主窗口並配置基本屬性
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: width,
+    height: height,
+    minWidth: 960, // 最小寬度
+    minHeight: Math.round(960 * (9/16)), // 最小高度也保持16:9
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.js'), // 加載預處理腳本
     },
-    titleBarStyle: 'hidden',
-    frame: false
+    titleBarStyle: 'hidden', // 隱藏默認標題欄
+    frame: false // 無邊框模式
   });
 
   // and load the index.html of the app.
@@ -45,12 +51,14 @@ const createWindow = async () => {
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 
+  // 設置SQLite數據庫路徑並確保目錄存在
   const dbPath = path.resolve(app.getAppPath(), '../data/db.sqlite')
   log.info(path.dirname(dbPath))
   if (!fs.existsSync(path.dirname(dbPath))) {
     fs.mkdirSync(path.dirname(dbPath))
   }
 
+  // 初始化SQLite數據庫連接
   db = knex({
     client: 'sqlite3',
     useNullAsDefault: true,
@@ -59,54 +67,60 @@ const createWindow = async () => {
     }
   })
 
-  // create images table
+  // create images table - 創建圖片存儲表
   db.schema.hasTable('images').then((exist) => {
     if (exist) {
       return;
     }
 
+    // 定義圖片表結構：ID、名稱、圖片內容
     return db.schema.createTable('images', (table) => {
-      table.bigIncrements('id', { primaryKey: true });
-      table.string('name');
-      table.binary('file_content');
+      table.bigIncrements('id', { primaryKey: true }); // 自增主鍵
+      table.string('name'); // 圖片名稱
+      table.binary('file_content'); // 圖片二進制數據
     })
   })
 
+  // 創建Modbus操作日誌表
   db.schema.hasTable('modbus_log').then((exist) => {
     if (exist) {
       return;
     }
 
+    // 定義Modbus日誌表結構
     return db.schema.createTable('modbus_log', (table) => {
-      table.bigIncrements('id', { primaryKey: true })
-      table.string('function')
-      table.string('send_time')
-      table.string('recv_time')
-      table.string('desc')
+      table.bigIncrements('id', { primaryKey: true }) // 自增主鍵
+      table.string('function') // Modbus功能碼
+      table.string('send_time') // 發送時間
+      table.string('recv_time') // 接收時間
+      table.string('desc') // 操作描述
     })
   })
 
-  //initial socket
+  //initial socket - 初始化Modbus TCP連接
   socket = new net.Socket()
   client = new modbus.client.TCP(socket)
 
+  // 處理Modbus連接成功事件
   socket.on('connect', function () {
     log.debug(`curState = ${curState} => readyState = ${socket.readyState}`)
     if (curState !== socket.readyState && socket.readyState === 'open') {
       curState = socket.readyState
-      mainWindow.webContents.send('app:modbus-connected')
-      toast.success('modbus', 'connected')
+      mainWindow.webContents.send('app:modbus-connected') // 通知前端連接成功
+      toast.success('modbus', 'connected') // 顯示成功提示
     }
   })
 
+  // 處理Modbus連接錯誤
   socket.on('error', console.error)
 
+  // 處理Modbus連接斷開事件
   socket.on('close', function () {
     log.debug(`curState = ${curState} => readyState = ${socket.readyState}`)
     if (!connectOpen) {
       curState = socket.readyState
-      mainWindow.webContents.send('app:modbus-disconnected')
-      toast.warning('modbus', 'disconnected')
+      mainWindow.webContents.send('app:modbus-disconnected') // 通知前端連接斷開
+      toast.warning('modbus', 'disconnected') // 顯示警告提示
     }
   })
 };
@@ -198,17 +212,7 @@ ipcMain.on('app:scan-folder-file', (event, folderpath) => {
             })
             list.push(work)
           }
-
-          // backup file
-          // var newpath = path.resolve(__dirname, './data/' + file)
-          // var dirpath = path.dirname(newpath)
-          // if (fs.existsSync(dirpath) === false) {
-          //   fs.mkdirSync(dirpath, { recursive: true })
-          // }
-
-          // fs.copyFileSync(filepath, newpath)
         } catch (error) {
-          // console.log(error)
           log.error(error)
         }
 
@@ -217,8 +221,7 @@ ipcMain.on('app:scan-folder-file', (event, folderpath) => {
           c += INCREMENT
         }
       })
-      // console.log(`current count = ${c}`)
-      // console.log(files.length)
+      
       win.setProgressBar(0)
       if (list.length <= 0) {
         toast.success('Batch', 'no item insert')
@@ -273,7 +276,6 @@ ipcMain.on('app:connect-modbus', (event, ip, port) => {
   hostPort = port
 
   refreshSocketConnectId = setInterval(() => {
-    // console.log(`connectOpen = ${connectOpen}, socket.connecting = ${socket.readyState}`)
     if (connectOpen && socket.readyState === 'closed' || curState === 'init') {
       socket.connect({
         host: hostIp,
@@ -373,7 +375,7 @@ function WriteModbus(args) {
           function: 'WriteSingleCoil',
           send_time: st.toLocaleString('sv'),
           recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send success, data:${JSON.stringify(args)}`
+          desc: `send success, data:${JSON.stringify(args)}` // 
         })
       }).catch(async function () {
         log.error(arguments)
@@ -382,7 +384,7 @@ function WriteModbus(args) {
           function: 'WriteSingleCoil',
           send_time: st.toLocaleString('sv'),
           recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send fail, data:${JSON.stringify(arguments)}`
+          desc: `send fail, data:${JSON.stringify(arguments)}` // 
         })
       }).finally(async function () {
         await mainWindow.webContents.send('app:exec-write-modbus-reply')
@@ -396,7 +398,7 @@ function WriteModbus(args) {
           function: 'WriteSingleRegister',
           send_time: st.toLocaleString('sv'),
           recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send success, data:${JSON.stringify(args)}`
+          desc: `send success, data:${JSON.stringify(args)}` // 
         })
       })
       .catch(async function () {
@@ -406,7 +408,7 @@ function WriteModbus(args) {
           function: 'WriteSingleRegister',
           send_time: st.toLocaleString('sv'),
           recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send fail, data:${JSON.stringify(arguments)}`
+          desc: `send fail, data:${JSON.stringify(arguments)}` // 
         })
       }).finally(async function () {
         await mainWindow.webContents.send('app:exec-write-modbus-reply')
@@ -422,7 +424,7 @@ function WriteModbus(args) {
           function: 'WriteMultipleCoils',
           send_time: st.toLocaleString('sv'),
           recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send success, data:${JSON.stringify(args)}`
+          desc: `send success, data:${JSON.stringify(args)}` // 
         })
       })
       .catch(async function () {
@@ -432,7 +434,7 @@ function WriteModbus(args) {
           function: 'WriteMultipleCoils',
           send_time: st.toLocaleString('sv'),
           recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send fail, data:${JSON.stringify(arguments)}`
+          desc: `send fail, data:${JSON.stringify(arguments)}` // 
         })
       }).finally(async function () {
         await mainWindow.webContents.send('app:exec-write-modbus-reply')
@@ -448,7 +450,7 @@ function WriteModbus(args) {
           function: 'WriteMultipleRegisters',
           send_time: st.toLocaleString('sv'),
           recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send success, data:${JSON.stringify(args)}`
+          desc: `send success, data:${JSON.stringify(args)}` // 
         })
       })
       .catch(async function () {
@@ -458,7 +460,7 @@ function WriteModbus(args) {
           function: 'WriteMultipleRegisters',
           send_time: st.toLocaleString('sv'),
           recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send fail, data:${JSON.stringify(arguments)}`
+          desc: `send fail, data:${JSON.stringify(arguments)}` // 
         })
       }).finally(async function () {
         await mainWindow.webContents.send('app:exec-write-modbus-reply')

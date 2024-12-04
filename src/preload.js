@@ -363,123 +363,458 @@ async function QueryModbusLog() {
     }
 }
 
-async function ShowGallery(index) {
+// 添加視窗大小改變的防抖函數
+let resizeTimeout;
+function handleResize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        const gallery = document.getElementById('gallery');
+        if (gallery && gallery.style.display !== 'none') {
+            ShowGallery(0); // 重新載入第一頁
+        }
+    }, 200); // 200ms 的延遲，避免頻繁觸發
+}
+
+// 在 DOMContentLoaded 時添加視窗大小改變的監聽器
+document.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('resize', handleResize);
+});
+
+async function ShowGallery(index = 0) {
     try {
-        const pagesize = 8
-        var temp = await ipcRenderer.invoke('app:get-image-count')
-        const count = temp[0]['count']
-        var total = count % pagesize === 0 ? count / pagesize - 1 : count / pagesize
-        console.log(`total page count:${total}`)
-        if (total === -1) {
+        // 確保 gallery 容器存在
+        const gallery = document.getElementById('gallery');
+        if (!gallery) {
+            console.error('Gallery container not found');
+            return;
+        }
+
+        // 計算每頁顯示的圖片數量
+        const imagesPerPage = calculateImagesPerPage();
+        console.log('Images per page:', imagesPerPage);
+        
+        // 獲取圖片總數
+        const countResult = await ipcRenderer.invoke('app:get-image-count');
+        const count = countResult[0]['count'];
+        
+        if (count === 0) {
+            // Show error message if no images are available
             ipcRenderer.send('app:toast-error-message', {
                 title: 'gallery',
                 message: '無圖片資料'
-            })
-            return
+            });
+            return;
         }
-
-        // page
-        var rows = await ipcRenderer.invoke('app:get-images', { page: index, size: pagesize })
-        // console.log(rows)
-        var content = document.getElementById('gallery')
-        content.innerHTML = ''
-
-        var row = document.createElement('div')
-        row.className = 'row d-flex flex-wrap'
+        
+        // 計算總頁數
+        const total = Math.ceil(count / imagesPerPage) - 1;
+        
+        // 確保索引在有效範圍內
+        index = Math.max(0, Math.min(index, total));
+        
+        // 獲取當前頁的圖片
+        const rows = await ipcRenderer.invoke('app:get-images', { 
+            page: index, 
+            size: imagesPerPage 
+        });
+        
+        // 清空現有內容
+        gallery.innerHTML = '';
+        
+        // 創建新的 row
+        let row = document.createElement('div');
+        row.className = 'row g-3';
+        gallery.appendChild(row);
+        
+        // 添加圖片
         for (let i = 0; i < rows.length; i++) {
-            var col = document.createElement('div')
-            col.className = 'col-3'
-
             const data = rows[i];
-            var img = document.createElement('img')
-            img.className = 'img-thumbnail shadow-1-strong rounded mb-4 p-1'
-            var base64Image = Buffer.from(data.file_content, 'binary').toString('base64')
-            img.src = `data:image/png;base64,${base64Image}`;
-
-            col.appendChild(img)
-            row.appendChild(col)
+            var img = document.createElement('img');
+            img.src = `data:image/jpeg;base64,${Buffer.from(data.file_content, 'binary').toString('base64')}`;
+            img.className = 'img-thumbnail gallery-img';
+            img.alt = '圖片';
+            
+            // Add click event for preview
+            img.style.cursor = 'pointer';
+            img.addEventListener('click', function() {
+                showPreviewModal(this);
+            });
+            
+            row.appendChild(img);
         }
+        
+        // Setup pagination control
+        let nav = document.getElementById('page');
+        nav.innerHTML = '';
+        
+        // Create container for pagination
+        let container = document.createElement('div');
+        container.className = 'd-flex flex-column align-items-center gap-2';
+        
+        // Create pagination buttons
+        let ul = document.createElement('ul');
+        ul.className = 'pagination mb-0';
 
-        content.appendChild(row)
+        // First page link
+        let li = document.createElement('li');
+        li.className = 'page-item';
+        let a = document.createElement('a');
+        a.className = 'page-link';
+        a.innerHTML = '<i class="bi bi-chevron-bar-left"></i>';
+        a.addEventListener('click', () => { ShowGallery(0); });
+        li.appendChild(a);
+        ul.appendChild(li);
 
-        // setup pagination control
-        let nav = document.getElementById('page')
-        nav.innerHTML = ''
-        let ul = document.createElement('ul')
-        ul.className = 'pagination'
+        start = index > 0 ? index - 1 : 0;
+        end = index + 2 >= total ? total : index + 2;
 
-        let li = document.createElement('li')
-        li.className = 'page-item'
-        let a = document.createElement('a')
-        a.className = 'page-link'
-        a.innerText = '第一頁'
-        a.addEventListener('click', () => { ShowGallery(0) })
-        li.appendChild(a)
-        ul.appendChild(li)
+        // Previous page link
+        li = document.createElement('li');
+        li.className = index === 0 ? 'page-item disabled' : 'page-item';
+        a = document.createElement('a');
+        a.className = 'page-link';
+        a.innerHTML = '<i class="bi bi-chevron-left"></i>';
+        a.addEventListener('click', () => { ShowGallery(start); });
+        li.appendChild(a);
+        ul.appendChild(li);
 
-        let start = 0
-        let end = 0
-
-        if (index > 0) {
-            start = index - 1
-        }
-
-        if (index + 1 >= total) {
-            end = total
-        } else {
-            end = index + 1
-        }
-
-        li = document.createElement('li')
-        if (index === 0) {
-            li.className = 'page-item disabled'
-        } else {
-            li.className = 'page-item'
-        }
-        a = document.createElement('a')
-        a.className = 'page-link'
-        a.innerText = '前一頁'
-        a.addEventListener('click', () => { ShowGallery(start) })
-        li.appendChild(a)
-        ul.appendChild(li)
-
+        // Page numbers
         for (let i = start; i <= end; i++) {
-            li = document.createElement('li')
-            li.className = 'page-item'
-
-            a = document.createElement('a')
-            a.className = i === index ? 'page-link active' : 'page-link'
-            a.innerText = i + 1
-            a.addEventListener('click', () => { ShowGallery(i) })
-            li.appendChild(a)
-
-            ul.appendChild(li)
+            li = document.createElement('li');
+            li.className = 'page-item';
+            a = document.createElement('a');
+            a.className = i === index ? 'page-link active' : 'page-link';
+            a.innerText = i + 1;
+            a.addEventListener('click', () => { ShowGallery(i); });
+            li.appendChild(a);
+            ul.appendChild(li);
         }
 
-        li = document.createElement('li')
-        if (index === total) {
-            li.className = 'page-item disabled'
-        } else {
-            li.className = 'page-item'
-        }
-        a = document.createElement('a')
-        a.className = 'page-link'
-        a.innerText = '後一頁'
-        a.addEventListener('click', () => { ShowGallery(end) })
-        li.appendChild(a)
-        ul.appendChild(li)
+        // Next page link
+        li = document.createElement('li');
+        li.className = index === total ? 'page-item disabled' : 'page-item';
+        a = document.createElement('a');
+        a.className = 'page-link';
+        a.innerHTML = '<i class="bi bi-chevron-right"></i>';
+        a.addEventListener('click', () => { ShowGallery(end); });
+        li.appendChild(a);
+        ul.appendChild(li);
 
-        li = document.createElement('li')
-        li.className = 'page-item'
-        a = document.createElement('a')
-        a.className = 'page-link'
-        a.innerText = '最終頁'
-        a.addEventListener('click', () => { ShowGallery(total) })
-        li.appendChild(a)
-        ul.appendChild(li)
+        // Last page link
+        li = document.createElement('li');
+        li.className = 'page-item';
+        a = document.createElement('a');
+        a.className = 'page-link';
+        a.innerHTML = '<i class="bi bi-chevron-bar-right"></i>';
+        a.addEventListener('click', () => { ShowGallery(total); });
+        li.appendChild(a);
+        ul.appendChild(li);
 
-        nav.appendChild(ul)
+        container.appendChild(ul);
+
+        // Add page number input in new row
+        let inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group justify-content-center';
+        inputGroup.style.maxWidth = '150px';
+
+        let input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'form-control page-input text-center';
+        input.min = 1;
+        input.max = total + 1;
+        input.value = index + 1;
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                const pageNum = parseInt(event.target.value);
+                if (pageNum && pageNum >= 1 && pageNum <= total + 1) {
+                    ShowGallery(pageNum - 1);
+                }
+            }
+        });
+        input.addEventListener('change', (event) => {
+            const pageNum = parseInt(event.target.value);
+            if (pageNum && pageNum >= 1 && pageNum <= total + 1) {
+                ShowGallery(pageNum - 1);
+            } else {
+                event.target.value = index + 1;
+            }
+        });
+
+        let inputGroupText = document.createElement('span');
+        inputGroupText.className = 'input-group-text';
+        inputGroupText.innerText = `/ ${total + 1}`;
+
+        inputGroup.appendChild(input);
+        inputGroup.appendChild(inputGroupText);
+        container.appendChild(inputGroup);
+
+        nav.appendChild(container);
     } catch (error) {
-        console.log(error)
+        console.error('Error in ShowGallery:', error);
     }
+}
+
+function calculateImagesPerPage() {
+    try {
+        // 獲取圖片容器的寬度
+        const container = document.querySelector('#gallery');
+        if (!container) {
+            console.warn('Gallery container not found, using default values');
+            return 8; // 返回預設值
+        }
+        
+        const containerWidth = container.clientWidth || window.innerWidth - 40; // 使用視窗寬度作為後備
+        
+        // 獲取視窗高度
+        const windowHeight = window.innerHeight;
+        
+        // 設定圖片和間距的尺寸（與 CSS 保持一致）
+        const imageWidth = 200; // 圖片寬度（包含邊距）
+        const imageHeight = 200; // 圖片高度（包含邊距）
+        const gridGap = 16; // 網格間距
+        
+        // 計算每行可容納的圖片數
+        const imagesPerRow = Math.max(1, Math.floor((containerWidth + gridGap) / (imageWidth + gridGap)));
+        
+        // 計算可容納的行數（減去分頁控制的空間）
+        const availableHeight = windowHeight - 150; // 150px 為分頁控制的預留空間
+        const rows = Math.max(1, Math.floor((availableHeight + gridGap) / (imageHeight + gridGap)));
+        
+        // 計算總共可顯示的圖片數量
+        return Math.max(imagesPerRow * rows, 4); // 至少顯示4張圖片
+    } catch (error) {
+        console.error('Error calculating images per page:', error);
+        return 8; // 發生錯誤時返回預設值
+    }
+}
+
+async function ShowGallery(index = 0) {
+    try {
+        // 確保 gallery 容器存在
+        const gallery = document.getElementById('gallery');
+        if (!gallery) {
+            console.error('Gallery container not found');
+            return;
+        }
+
+        // 計算每頁顯示的圖片數量
+        const imagesPerPage = calculateImagesPerPage();
+        console.log('Images per page:', imagesPerPage);
+        
+        // 獲取圖片總數
+        const countResult = await ipcRenderer.invoke('app:get-image-count');
+        const count = countResult[0]['count'];
+        
+        if (count === 0) {
+            // Show error message if no images are available
+            ipcRenderer.send('app:toast-error-message', {
+                title: 'gallery',
+                message: '無圖片資料'
+            });
+            return;
+        }
+        
+        // 計算總頁數
+        const total = Math.ceil(count / imagesPerPage) - 1;
+        
+        // 確保索引在有效範圍內
+        index = Math.max(0, Math.min(index, total));
+        
+        // 獲取當前頁的圖片
+        const rows = await ipcRenderer.invoke('app:get-images', { 
+            page: index, 
+            size: imagesPerPage 
+        });
+        
+        // 清空現有內容
+        gallery.innerHTML = '';
+        
+        // 創建新的 row
+        let row = document.createElement('div');
+        row.className = 'row g-3';
+        gallery.appendChild(row);
+        
+        // 添加圖片
+        for (let i = 0; i < rows.length; i++) {
+            const data = rows[i];
+            var img = document.createElement('img');
+            img.src = `data:image/jpeg;base64,${Buffer.from(data.file_content, 'binary').toString('base64')}`;
+            img.className = 'img-thumbnail gallery-img';
+            img.alt = '圖片';
+            
+            // Add click event for preview
+            img.style.cursor = 'pointer';
+            img.addEventListener('click', function() {
+                showPreviewModal(this);
+            });
+            
+            row.appendChild(img);
+        }
+        
+        // Setup pagination control
+        let nav = document.getElementById('page');
+        nav.innerHTML = '';
+        
+        // Create container for pagination
+        let container = document.createElement('div');
+        container.className = 'd-flex flex-column align-items-center gap-2';
+        
+        // Create pagination buttons
+        let ul = document.createElement('ul');
+        ul.className = 'pagination mb-0';
+
+        // First page link
+        let li = document.createElement('li');
+        li.className = 'page-item';
+        let a = document.createElement('a');
+        a.className = 'page-link';
+        a.innerHTML = '<i class="bi bi-chevron-bar-left"></i>';
+        a.addEventListener('click', () => { ShowGallery(0); });
+        li.appendChild(a);
+        ul.appendChild(li);
+
+        start = index > 0 ? index - 1 : 0;
+        end = index + 2 >= total ? total : index + 2;
+
+        // Previous page link
+        li = document.createElement('li');
+        li.className = index === 0 ? 'page-item disabled' : 'page-item';
+        a = document.createElement('a');
+        a.className = 'page-link';
+        a.innerHTML = '<i class="bi bi-chevron-left"></i>';
+        a.addEventListener('click', () => { ShowGallery(start); });
+        li.appendChild(a);
+        ul.appendChild(li);
+
+        // Page numbers
+        for (let i = start; i <= end; i++) {
+            li = document.createElement('li');
+            li.className = 'page-item';
+            a = document.createElement('a');
+            a.className = i === index ? 'page-link active' : 'page-link';
+            a.innerText = i + 1;
+            a.addEventListener('click', () => { ShowGallery(i); });
+            li.appendChild(a);
+            ul.appendChild(li);
+        }
+
+        // Next page link
+        li = document.createElement('li');
+        li.className = index === total ? 'page-item disabled' : 'page-item';
+        a = document.createElement('a');
+        a.className = 'page-link';
+        a.innerHTML = '<i class="bi bi-chevron-right"></i>';
+        a.addEventListener('click', () => { ShowGallery(end); });
+        li.appendChild(a);
+        ul.appendChild(li);
+
+        // Last page link
+        li = document.createElement('li');
+        li.className = 'page-item';
+        a = document.createElement('a');
+        a.className = 'page-link';
+        a.innerHTML = '<i class="bi bi-chevron-bar-right"></i>';
+        a.addEventListener('click', () => { ShowGallery(total); });
+        li.appendChild(a);
+        ul.appendChild(li);
+
+        container.appendChild(ul);
+
+        // Add page number input in new row
+        let inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group justify-content-center';
+        inputGroup.style.maxWidth = '150px';
+
+        let input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'form-control page-input text-center';
+        input.min = 1;
+        input.max = total + 1;
+        input.value = index + 1;
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                const pageNum = parseInt(event.target.value);
+                if (pageNum && pageNum >= 1 && pageNum <= total + 1) {
+                    ShowGallery(pageNum - 1);
+                }
+            }
+        });
+        input.addEventListener('change', (event) => {
+            const pageNum = parseInt(event.target.value);
+            if (pageNum && pageNum >= 1 && pageNum <= total + 1) {
+                ShowGallery(pageNum - 1);
+            } else {
+                event.target.value = index + 1;
+            }
+        });
+
+        let inputGroupText = document.createElement('span');
+        inputGroupText.className = 'input-group-text';
+        inputGroupText.innerText = `/ ${total + 1}`;
+
+        inputGroup.appendChild(input);
+        inputGroup.appendChild(inputGroupText);
+        container.appendChild(inputGroup);
+
+        nav.appendChild(container);
+    } catch (error) {
+        console.error('Error in ShowGallery:', error);
+    }
+}
+
+function showPreviewModal(imgElement) {
+    const modal = document.getElementById('imagePreviewModal');
+    const previewImage = document.getElementById('previewImage');
+    const prevButton = modal.querySelector('.preview-prev');
+    const nextButton = modal.querySelector('.preview-next');
+    
+    // Set current image
+    previewImage.src = imgElement.src;
+    
+    // Get all gallery images and convert to array
+    const imageArray = Array.from(document.querySelectorAll('.gallery-img'));
+    let currentIndex = imageArray.indexOf(imgElement);
+    
+    console.log('Current image index:', currentIndex); // 添加日誌
+    console.log('Total images:', imageArray.length); // 添加日誌
+    
+    // Update navigation buttons
+    function updateNavButtons() {
+        prevButton.style.display = currentIndex > 0 ? 'flex' : 'none';
+        nextButton.style.display = currentIndex < imageArray.length - 1 ? 'flex' : 'none';
+    }
+    
+    // Navigation handlers
+    prevButton.onclick = () => {
+        if (currentIndex > 0) {
+            currentIndex--;
+            previewImage.src = imageArray[currentIndex].src;
+            updateNavButtons();
+        }
+    };
+    
+    nextButton.onclick = () => {
+        if (currentIndex < imageArray.length - 1) {
+            currentIndex++;
+            previewImage.src = imageArray[currentIndex].src;
+            updateNavButtons();
+        }
+    };
+    
+    // Initial button state
+    updateNavButtons();
+    
+    // Show modal
+    modal.classList.add('show');
+    document.body.classList.add('modal-open');
+    
+    // Close modal handler
+    const closeButton = modal.querySelector('.btn-close');
+    const closeModal = () => {
+        modal.classList.remove('show');
+        document.body.classList.remove('modal-open');
+    };
+    
+    closeButton.onclick = closeModal;
+    modal.querySelector('.modal-backdrop').onclick = closeModal;
 }

@@ -7,8 +7,9 @@
   <title>Sqlite 3</title>
   <link rel="stylesheet" href="index.css" />
   <link rel="stylesheet" href="../node_modules/bootstrap5-toggle/css/bootstrap5-toggle.min.css">
+  <link rel="stylesheet" href="../node_modules/bootstrap-icons/font/bootstrap-icons.css">
   <script src="../node_modules/jquery/dist/jquery.min.js"></script>
-  <script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
   <script src="../node_modules/bootstrap5-toggle/js/bootstrap5-toggle.jquery.min.js"></script>
 </head>
 
@@ -92,15 +93,12 @@
       </div>
       <!-- image gallery for view database -->
       <div id="2a" class="tab-pane fade">
-        <!-- image gallery gen -->
-        <div class="row">
-          <div class="col">
+        <div class="gallery-wrapper">
+          <div class="gallery-content">
             <div id="gallery"></div>
           </div>
-        </div>
-        <div class="row">
-          <div class="col d-flex flex-row justify-content-center">
-            <nav id="page"> </nav>
+          <div class="gallery-pagination">
+            <div id="page"></div>
           </div>
         </div>
       </div>
@@ -159,9 +157,6 @@
           <div class="col-4">
             <div class="form-floating">
               <select id="func" class="form-select" disabled>
-                <!-- <option value="1">Read Coils</option>
-                <option value="2">Read Input Registers</option>
-                <option value="3">Read Holding Registers</option> -->
               </select>
               <label for="func">執行方法</label>
             </div>
@@ -290,6 +285,27 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Image Preview Modal -->
+  <div class="modal" id="imagePreviewModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <button class="preview-nav-btn preview-prev">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <img id="previewImage" src="" alt="Preview">
+          <button class="preview-nav-btn preview-next">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-backdrop"></div>
   </div>
 
   <script src="./renderer.js"></script>
