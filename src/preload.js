@@ -210,6 +210,15 @@ contextBridge.exposeInMainWorld('api', {
     },
     show_gallery: (i) => {
         ShowGallery(i)
+    },
+    connect_mqtt: () => {
+        const btn = document.getElementById('mqtt-conn')
+        if (btn.innerText === '連線') {
+            
+        } else {
+            
+        }
+        ipcRenderer.send('app:connect-mqtt')
     }
 })
 
@@ -262,8 +271,7 @@ ipcRenderer.on('app:exec-read-modbus-reply', (event, reply) => {
 
         var content = document.getElementById('data_content')
         content.innerHTML = ''
-        content.classList.remove('p-3')
-        content.classList.add('p-3')
+        content.className = 'p-3'
 
         // translate 2d
         const table = []
@@ -316,10 +324,10 @@ async function QueryModbusLog() {
         var content = document.getElementById('data_content')
         content.innerHTML = ''
         content.style = ''
-        content.classList.remove('p-3')
+        content.className = 'table-responsive'
 
         let table = document.createElement('table')
-        table.className = 'table table-sm table-striped table-bordered'
+        table.className = 'table table-striped table-bordered'
 
         // create column header
         let head = document.createElement('thead')
@@ -338,6 +346,7 @@ async function QueryModbusLog() {
         let body = document.createElement('tbody')
         for (let i = 0; i < modbuslog.length; i++) {
             tr = document.createElement('tr')
+            tr.scope = 'row'
             const row = modbuslog[i];
             Object.getOwnPropertyNames(row).forEach(colName => {
                 td = document.createElement('td')
@@ -363,8 +372,8 @@ async function ShowGallery(index) {
         console.log(`total page count:${total}`)
         if (total === -1) {
             ipcRenderer.send('app:toast-error-message', {
-                title:'gallery',
-                message:'無圖片資料'
+                title: 'gallery',
+                message: '無圖片資料'
             })
             return
         }

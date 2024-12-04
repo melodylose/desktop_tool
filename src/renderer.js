@@ -105,3 +105,22 @@ function handleModeChange(event) {
 // change model
 document.getElementById('mode').addEventListener('change', handleModeChange, true)
 document.getElementById('mode').dispatchEvent(new Event('change'))
+
+// mqtt connect handle
+function handleMQTTConnection() {
+    var carousel_inst = new bootstrap.Carousel(document.getElementById('slide'))
+    console.log(carousel_inst)
+    // slide to publish
+    carousel_inst.to(1)
+}
+
+document.getElementById('mqtt-conn').addEventListener('click', handleMQTTConnection, true)
+
+document.getElementById('slide').addEventListener('slide.bs.carousel', event => {
+    console.log(event)
+    var items = document.querySelectorAll('a[data-bs-target="#slide"]')
+    items[event.from].classList.remove('border')
+    items[event.from].classList.remove('border-primary')
+    items[event.to].classList.add('border')
+    items[event.to].classList.add('border-primary')
+})

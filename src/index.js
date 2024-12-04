@@ -8,6 +8,7 @@ const modbus = require('jsmodbus')
 const net = require('net')
 const log = require('electron-log')
 const logPath = path.join(app.getAppPath(), '../logs/main.log')
+const mqtt = require('mqtt')
 
 log.initialize({ preload: true })
 log.transports.file.resolvePathFn = () => logPath
@@ -20,6 +21,7 @@ let curState
 let hostIp, hostPort
 let refreshSocketConnectId
 let refreshModbusId
+let mqttClient
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -330,7 +332,7 @@ ipcMain.handle('app:get-images', function (event, args) {
 })
 
 ipcMain.handle('app:get-image-count', function (event, args) {
-  return db.table('images').count({count:'*'})
+  return db.table('images').count({ count: '*' })
 })
 
 function ReadModbus(args) {
