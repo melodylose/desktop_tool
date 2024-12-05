@@ -153,61 +153,81 @@ ipcMain.on('app:reveal-in-explorer', (event, args) => {
   shell.showItemInFolder(args);
 })
 
+// 處理insert image file
 ipcMain.on('app:insert-image-file', (event, filepath) => {
   if (filepath === undefined || filepath === '') {
     event.sender.send('app:insert-image-file-reply', false)
     return;
   }
 
+  // 讀取檔案內容
   const buffer = fs.readFileSync(filepath)
+  // 取得檔案名稱
   var filename = path.basename(filepath)
+
+  // 將檔案內容與名稱存入 images 資料表
   db.table('images').insert({ name: filename, file_content: buffer }).then((result) => {
     log.debug(`images table insert result:${result}`)
   })
 })
 
+// 處理show image by id
 ipcMain.handle('app:show-image-query-id', (event, id) => {
+  // 依據 id 查詢 images 資料表
   return db.table('images').where({ id: id }).first();
 })
 
+// 顯示成功訊息
 ipcMain.on('app:toast-success-message', (event, args) => {
   toast.success(args.title, args.message, 3000);
 })
 
+// 顯示錯誤訊息
 ipcMain.on('app:toast-error-message', (event, args) => {
   toast.error(args.title, args.message, 3000);
 })
 
+// 處理scan folder files
 ipcMain.on('app:scan-folder-file', (event, folderpath) => {
+  log.info(`receive scan folder path: ${folderpath}`)
+  // 如果folderpath為空或undefined就回傳true
   if (folderpath === undefined || folderpath === '') {
+    log.debug('folderpath is empty')
     event.sender.send('app:scan-folder-file-reply', true)
     return 0;
   }
 
+  // 如果folderpath不存在就回傳true
   if (fs.existsSync(folderpath) === false) {
+    log.debug('folderpath does not exist')
     event.sender.send('app:scan-folder-file-reply', true)
     return 0;
   }
 
   let win = BrowserWindow.getFocusedWindow();
+  // 讀取folderpath所有檔案
   fs.readdir(folderpath, {
     recursive: true
   }, (err, files) => {
     if (err) {
       log.error(err)
     } else {
+      log.debug(`find ${files.length} files in folder path: ${folderpath}`)
+      // 計算進度條的進度
       let c = 0
       const INCREMENT = 1 / files.length
-      let list = [];
+      // 將所有檔案處理
       files.forEach(async (file) => {
-        // console.log(`file: ${file}`)
         try {
+          // 取得檔案路徑與副檔名
           var filepath = path.resolve(folderpath, file);
           var fileext = path.extname(filepath)
+          // 如果是png副檔名就將它insert到images資料表
           if (fileext === '.png') {
             var filename = path.basename(filepath)
             const buffer = fs.readFileSync(filepath)
             var work = db.table('images').insert({ name: filename, file_content: buffer }).then((result) => {
+              //  update progress bar
               win.setProgressBar(0.5, { mode: 'indeterminate' })
             })
             list.push(work)
@@ -216,32 +236,31 @@ ipcMain.on('app:scan-folder-file', (event, folderpath) => {
           log.error(error)
         }
 
+        // update progress bar
         win.setProgressBar(c)
         if (c < 2) {
           c += INCREMENT
         }
       })
       
+      // reset progress bar count
       win.setProgressBar(0)
-      if (list.length <= 0) {
-        toast.success('Batch', 'no item insert')
-        event.sender.send('app:scan-folder-file-reply', true)
-        return;
-      }
-
       // check all insert completed then kill folder reset progress bar count
       Promise.all(list).finally(async () => {
         win.setProgressBar(0)
+        // 刪除folder
         await shell.trashItem(folderpath)
+        // 顯示訊息
         toast.success('Batch', 'import folder all image finished.')
+        // 回傳true
         event.sender.send('app:scan-folder-file-reply', true)
       })
     }
   })
 })
 
+// 開啟資料夾
 ipcMain.on('app:open-dir', (event, args) => {
-  // console.log('receive dialog')
   log.info('receive open directory click')
   dialog.showOpenDialog({ properties: ['openDirectory'] }).then(result => {
     log.debug(`user select folder path: ${result}`)
@@ -249,6 +268,7 @@ ipcMain.on('app:open-dir', (event, args) => {
   })
 })
 
+// 使用glob去掃描資料夾
 ipcMain.handle('app:scan-folder-with-glob', (event, folderPath) => {
   log.debug(`scan folder path = ${folderPath}\\**`)
   var pattern = fg.win32.convertPathToPattern(`${folderPath}\\**\\*.*`)
@@ -256,11 +276,12 @@ ipcMain.handle('app:scan-folder-with-glob', (event, folderPath) => {
   return fg.globSync(pattern, { onlyFiles: false, globstar: true })
 })
 
+// 關閉視窗
 ipcMain.on('app:close-window', (event, args) => {
   mainWindow.close()
 })
 
-// query db
+// 查詢modbus log
 ipcMain.handle('app:query-modbus-log', (event, args) => {
   return db.table('modbus_log').select('*')
     .offset(args.pagesize * args.page)
@@ -268,8 +289,9 @@ ipcMain.handle('app:query-modbus-log', (event, args) => {
     .orderBy('send_time', 'desc')
 })
 
-// execute connect with modbus
+// 執行與 Modbus 的連接
 ipcMain.on('app:connect-modbus', (event, ip, port) => {
+  log.info(`正在嘗試連接 Modbus，IP: ${ip}, 端口: ${port}`);
   curState = 'init'
   connectOpen = true;
   hostIp = ip
@@ -277,6 +299,7 @@ ipcMain.on('app:connect-modbus', (event, ip, port) => {
 
   refreshSocketConnectId = setInterval(() => {
     if (connectOpen && socket.readyState === 'closed' || curState === 'init') {
+      log.debug('嘗試重新連接 Modbus');
       socket.connect({
         host: hostIp,
         port: hostPort
@@ -285,185 +308,197 @@ ipcMain.on('app:connect-modbus', (event, ip, port) => {
   }, 1000);
 })
 
-// execute disconnect modbus
+// 執行與 Modbus 的斷開連接
 ipcMain.on('app:disconnect-modbus', (event, args) => {
-  // stop reopen socket
+  log.info('正在斷開 Modbus 連接');
+  // 停止重新打開 socket
   clearInterval(refreshSocketConnectId)
-  // stop continuous
+  // 停止連續操作
   clearInterval(refreshModbusId)
   connectOpen = false;
   socket.resetAndDestroy()
+  log.debug('Modbus 連接已斷開');
 })
 
-// execute read modbus function
+// 執行讀取 Modbus 功能
 ipcMain.on('app:exec-read-modbus', function (event, args) {
-  log.verbose('read single step')
+  log.verbose('執行單步讀取');
   ReadModbus(args)
 })
 
+// 執行連續讀取 Modbus 功能
 ipcMain.on('app:exec-read-modbus-continuous', function (event, args) {
+  log.info(`開始連續讀取 Modbus，間隔: ${args.interval} 秒`);
   refreshModbusId = setInterval(() => {
     ReadModbus(args)
   }, args.interval * 1000);
 })
 
+// 執行寫入 Modbus 功能
 ipcMain.on('app:exec-write-modbus', function (event, args) {
-  log.verbose('write single step')
+  log.verbose('執行單步寫入');
   WriteModbus(args)
 })
 
+// 連續執行寫入 Modbus 功能
 ipcMain.on('app:exec-write-modbus-continuous', function (event, args) {
+  log.info(`開始連續寫入 Modbus，間隔: ${args.interval} 秒`);
   refreshModbusId = setInterval(() => {
     WriteModbus(args)
   }, args.interval * 1000);
 })
 
+// 停止連續執行 Modbus 操作
 ipcMain.on('app:exec-modbus-continuous-stop', function (event, args) {
+  log.info('停止連續執行 Modbus 操作');
   clearInterval(refreshModbusId)
 })
 
+// 獲取圖片列表
 ipcMain.handle('app:get-images', function (event, args) {
-  log.debug(`get images argument:${JSON.stringify(args)}`)
+  log.debug(`獲取圖片列表，參數: ${JSON.stringify(args)}`);
   var page = 0
   var size = 8
   if (args !== undefined) {
     page = args.page
     size = args.size
   }
+  log.verbose(`查詢圖片，頁碼: ${page}，每頁數量: ${size}`);
   return db.table('images').offset(page * size).limit(size)
 })
 
+// 獲取圖片總數
 ipcMain.handle('app:get-image-count', function (event, args) {
+  log.debug('獲取圖片總數');
   return db.table('images').count({ count: '*' })
 })
 
 function ReadModbus(args) {
+  log.debug(`ReadModbus called with args: ${JSON.stringify(args)}`);
+
+  // 根據功能代碼選擇適當的讀取方法
   if (args.func === '1') {
-    client.readCoils(args.addr, args.size).then(function (resp) {
-      // console.log(resp)
-      mainWindow.webContents.send('app:exec-read-modbus-reply', resp)
-    }).catch(function () {
-      log.error(arguments)
-    })
+    // 讀取線圈
+    log.info(`Reading ${args.size} coils from address ${args.addr}`);
+    client.readCoils(args.addr, args.size)
+      .then(function (resp) {
+        log.verbose('Coils read successfully');
+        mainWindow.webContents.send('app:exec-read-modbus-reply', resp);
+      })
+      .catch(function (error) {
+        log.error('Error reading coils:', error);
+      });
   } else if (args.func === '2') {
-    client.readInputRegisters(args.addr, args.size).then(function (resp) {
-      // console.log(resp)
-      mainWindow.webContents.send('app:exec-read-modbus-reply', resp)
-    }).catch(function () {
-      log.error(arguments)
-    })
+    // 讀取輸入寄存器
+    log.info(`Reading ${args.size} input registers from address ${args.addr}`);
+    client.readInputRegisters(args.addr, args.size)
+      .then(function (resp) {
+        log.verbose('Input registers read successfully');
+        mainWindow.webContents.send('app:exec-read-modbus-reply', resp);
+      })
+      .catch(function (error) {
+        log.error('Error reading input registers:', error);
+      });
   } else if (args.func === '3') {
-    client.readHoldingRegisters(args.addr, args.size).then(function (resp) {
-      // console.log(resp.response._body.valuesAsArray)
-      mainWindow.webContents.send('app:exec-read-modbus-reply', resp)
-    }).catch(function () {
-      log.error(require('util').inspect(arguments, {
-        depth: null
-      }))
-    })
+    // 讀取保持寄存器
+    log.info(`Reading ${args.size} holding registers from address ${args.addr}`);
+    client.readHoldingRegisters(args.addr, args.size)
+      .then(function (resp) {
+        log.verbose('Holding registers read successfully');
+        mainWindow.webContents.send('app:exec-read-modbus-reply', resp);
+      })
+      .catch(function (error) {
+        log.error('Error reading holding registers:', require('util').inspect(error, { depth: null }));
+      });
+  } else {
+    log.warn(`Unsupported function code: ${args.func}`);
   }
 }
 
+/**
+ * 執行 Modbus 寫入操作
+ * @param {Object} args - 寫入操作的參數
+ * @param {string} args.func - Modbus 功能碼
+ * @param {number} args.addr - 起始地址
+ * @param {*} args.val - 要寫入的值
+ * @param {number} [args.size] - 寫入的數量（僅用於多個線圈/寄存器）
+ */
 function WriteModbus(args) {
-  log.debug(`trace input parameters = ${args}`)
-  if (args.func === '1') {
-    const st = new Date()
-    client.writeSingleCoil(args.addr, args.val)
-      .then(async function (resp) {
-        // record db
-        await db.table('modbus_log').insert({
-          function: 'WriteSingleCoil',
-          send_time: st.toLocaleString('sv'),
-          recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send success, data:${JSON.stringify(args)}` // 
-        })
-      }).catch(async function () {
-        log.error(arguments)
-        // record db
-        await db.table('modbus_log').insert({
-          function: 'WriteSingleCoil',
-          send_time: st.toLocaleString('sv'),
-          recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send fail, data:${JSON.stringify(arguments)}` // 
-        })
-      }).finally(async function () {
-        await mainWindow.webContents.send('app:exec-write-modbus-reply')
-      })
-  } else if (args.func === '2') {
-    const st = new Date()
-    client.writeSingleRegister(args.addr, args.val)
-      .then(async function (resp) {
-        // record db
-        await db.table('modbus_log').insert({
-          function: 'WriteSingleRegister',
-          send_time: st.toLocaleString('sv'),
-          recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send success, data:${JSON.stringify(args)}` // 
-        })
-      })
-      .catch(async function () {
-        console.error(arguments)
-        // record db
-        await db.table('modbus_log').insert({
-          function: 'WriteSingleRegister',
-          send_time: st.toLocaleString('sv'),
-          recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send fail, data:${JSON.stringify(arguments)}` // 
-        })
-      }).finally(async function () {
-        await mainWindow.webContents.send('app:exec-write-modbus-reply')
-      })
-  } else if (args.func === '3') {
-    const st = new Date()
-    const values = Buffer.from(args.val)
-    client.writeMultipleCoils(args.addr, values, args.size)
-      .then(async function (resp) {
-        // console.log(resp)
-        // record db
-        await db.table('modbus_log').insert({
-          function: 'WriteMultipleCoils',
-          send_time: st.toLocaleString('sv'),
-          recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send success, data:${JSON.stringify(args)}` // 
-        })
-      })
-      .catch(async function () {
-        console.log(arguments)
-        // record db
-        await db.table('modbus_log').insert({
-          function: 'WriteMultipleCoils',
-          send_time: st.toLocaleString('sv'),
-          recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send fail, data:${JSON.stringify(arguments)}` // 
-        })
-      }).finally(async function () {
-        await mainWindow.webContents.send('app:exec-write-modbus-reply')
-      })
-  } else if (args.func === '4') {
-    const st = new Date()
-    const values = Buffer.from(args.val)
-    client.writeMultipleRegisters(args.addr, values)
-      .then(async function (resp) {
-        // console.log(resp)
-        // record db
-        await db.table('modbus_log').insert({
-          function: 'WriteMultipleRegisters',
-          send_time: st.toLocaleString('sv'),
-          recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send success, data:${JSON.stringify(args)}` // 
-        })
-      })
-      .catch(async function () {
-        console.error(arguments)
-        // record db
-        await db.table('modbus_log').insert({
-          function: 'WriteMultipleRegisters',
-          send_time: st.toLocaleString('sv'),
-          recv_time: (new Date()).toLocaleString('sv'),
-          desc: `send fail, data:${JSON.stringify(arguments)}` // 
-        })
-      }).finally(async function () {
-        await mainWindow.webContents.send('app:exec-write-modbus-reply')
-      })
+  log.debug(`WriteModbus input parameters: ${JSON.stringify(args)}`);
+
+  // 根據不同的功能碼執行相應的寫入操作
+  switch (args.func) {
+    case '1':
+      // 寫入單個線圈
+      writeModbusOperation('WriteSingleCoil', () => client.writeSingleCoil(args.addr, args.val), args);
+      break;
+    case '2':
+      // 寫入單個寄存器
+      writeModbusOperation('WriteSingleRegister', () => client.writeSingleRegister(args.addr, args.val), args);
+      break;
+    case '3':
+      // 寫入多個線圈
+      writeModbusOperation('WriteMultipleCoils', () => {
+        const values = Buffer.from(args.val);
+        return client.writeMultipleCoils(args.addr, values, args.size);
+      }, args);
+      break;
+    case '4':
+      // 寫入多個寄存器
+      writeModbusOperation('WriteMultipleRegisters', () => {
+        const values = Buffer.from(args.val);
+        return client.writeMultipleRegisters(args.addr, values);
+      }, args);
+      break;
+    default:
+      log.error(`Unsupported Modbus function code: ${args.func}`);
+  }
+}
+
+/**
+ * 執行 Modbus 寫入操作並記錄結果
+ * @param {string} functionName - Modbus 功能名稱
+ * @param {Function} operation - 要執行的 Modbus 操作
+ * @param {Object} args - 操作參數
+ */
+async function writeModbusOperation(functionName, operation, args) {
+  const startTime = new Date();
+  log.info(`Starting ${functionName} operation`);
+
+  try {
+    const response = await operation();
+    log.debug(`${functionName} operation successful`);
+    await logModbusOperation(functionName, startTime, args, 'success');
+  } catch (error) {
+    log.error(`${functionName} operation failed: ${error}`);
+    await logModbusOperation(functionName, startTime, args, 'fail', error);
+  } finally {
+    log.debug(`${functionName} operation completed`);
+    await mainWindow.webContents.send('app:exec-write-modbus-reply');
+  }
+}
+
+/**
+ * 將 Modbus 操作記錄到數據庫
+ * @param {string} functionName - Modbus 功能名稱
+ * @param {Date} startTime - 操作開始時間
+ * @param {Object} args - 操作參數
+ * @param {string} status - 操作狀態 ('success' 或 'fail')
+ * @param {Error} [error=null] - 如果操作失敗，則為錯誤對象
+ */
+async function logModbusOperation(functionName, startTime, args, status, error = null) {
+  const endTime = new Date();
+  const logEntry = {
+    function: functionName,
+    send_time: startTime.toLocaleString('sv'),
+    recv_time: endTime.toLocaleString('sv'),
+    desc: `send ${status}, data:${JSON.stringify(status === 'success' ? args : error)}`
+  };
+
+  try {
+    await db.table('modbus_log').insert(logEntry);
+    log.debug(`Modbus operation logged: ${JSON.stringify(logEntry)}`);
+  } catch (dbError) {
+    log.error(`Failed to log Modbus operation: ${dbError}`);
   }
 }
