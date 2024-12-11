@@ -1,126 +1,96 @@
-async function handleRelativePathKeyDown(event) {
-    if (event.key === 'Enter') {
-        window.api.scan_folder();
+// 載入模組
+const ModbusHandler = require('./modbusOperations');
+const MqttHandler = require('./mqttOperations');
+const FtpHandler = require('./ftpOperations');
+
+// 主程式邏輯
+const modbusHandler = new ModbusHandler();
+const mqttHandler = new MqttHandler();
+const ftpHandler = new FtpHandler();
+
+// 初始化各頁面的功能
+function initializePage(pageName) {
+    console.log(`Preparing to initialize ${pageName} page`);
+    
+    // 直接初始化對應的頁面
+    try {
+        console.log(`Initializing ${pageName} page...`);
+        switch(pageName) {
+            case 'home':
+                // 首頁初始化
+                break;
+            case 'modbus':
+                // Modbus頁面初始化
+                modbusHandler.initialize();
+                break;
+            case 'mqtt':
+                // MQTT頁面初始化
+                mqttHandler.initialize();
+                break;
+            case 'ftp':
+                // FTP頁面初始化
+                console.log('Initializing FTP page...');
+                ftpHandler.initialize();
+                break;
+            case 'options':
+                // 設置頁面初始化
+                initializeOptionsPage();
+                break;
+        }
+    } catch (error) {
+        console.error(`Error initializing ${pageName} page:`, error);
     }
 }
 
-document.getElementById('relativePath').addEventListener('keydown', handleRelativePathKeyDown, true);
+// 設置頁面初始化
+function initializeOptionsPage() {
+    try {
+        // 綁定主題切換事件
+        const themeSelect = document.getElementById('theme');
+        if (themeSelect) {
+            themeSelect.addEventListener('change', (event) => {
+                const theme = event.target.value;
+                handleThemeChange(theme);
+            });
+        }
 
-function handleImageIdKeyDown(event) {
-    if (event.key == 'Enter') {
-        window.api.show_image();
+        // 綁定語言切換事件
+        const languageSelect = document.getElementById('language');
+        if (languageSelect) {
+            languageSelect.addEventListener('change', (event) => {
+                const language = event.target.value;
+                // 處理語言切換邏輯
+                console.log('Language changed to:', language);
+            });
+        }
+    } catch (error) {
+        console.error('Error initializing options page:', error);
     }
 }
 
-document.getElementById('imageId').addEventListener('keydown', handleImageIdKeyDown, true);
-
-let folderTimer = setInterval(() => {
-    // window.api.scan_folder();
-}, 1000);
-
-function handleFolderPathKeyDown(event) {
-    if (event.key === 'Enter') {
-        window.api.scan_with_fast_glob()
+// 主題切換處理
+function handleThemeChange(theme) {
+    const body = document.body;
+    if (theme === 'dark') {
+        body.classList.add('bg-dark', 'text-light');
+        document.querySelectorAll('.card').forEach(card => {
+            card.classList.add('bg-secondary', 'text-white');
+        });
+    } else {
+        body.classList.remove('bg-dark', 'text-light');
+        document.querySelectorAll('.card').forEach(card => {
+            card.classList.remove('bg-secondary', 'text-white');
+        });
     }
 }
 
-document.getElementById('folderPath').addEventListener('keydown', handleFolderPathKeyDown, true)
+// 斷開連線
+window.addEventListener('beforeunload', () => {
+    // 清理資源
+    modbusHandler.cleanup && modbusHandler.cleanup();
+    mqttHandler.cleanup && mqttHandler.cleanup();
+    ftpHandler.cleanup && ftpHandler.cleanup();
+});
 
-function handleImagePathTextChange(event) {
-    document.getElementById('imgPath').classList.remove('is-invalid')
-}
-
-document.getElementById('imgPath').addEventListener('change', handleImagePathTextChange, true)
-
-$('#connect').on('change', function () {
-    window.api.connect_modbus()
-})
-
-// 資料範圍上下限驗證
-// read coils 8 ~ 1024
-// read input registers 1 ~ 120
-// read holding registers 1 ~ 120
-$('#size').on('change', function () {
-    var val = $(this).val()
-    if ($('#func').val() === '1') {
-        if (val > 1024) {
-            $(this).val(1024)
-        } if (val < 8) {
-            $(this).val(8)
-        }
-    } else if ($('#func').val() === '2' || $('#func').val() === '3') {
-        if (val > 120) {
-            $(this).val(120)
-        } else if (val <= 0) {
-            $(this).val(1)
-        }
-    }
-})
-
-function handleModeChange(event) {
-    var val = parseInt($(this).val())
-    console.log(val)
-    if (val === 1 || val === 2) {
-        document.getElementById('continuous').classList.remove('collapse')
-        document.getElementById('write_content').classList.remove('collapse')
-
-        document.getElementById('write_content').classList.add('collapse')
-        if (val === 1) {
-            document.getElementById('continuous').classList.add('collapse')
-        }
-
-        var select = document.getElementById('func')
-        select.innerHTML = ''
-
-        let arr = ['Read Coils', 'Read Input Registers', 'Read Holding Registers']
-        for (let i = 0; i < arr.length; i++) {
-            var option = document.createElement('option')
-            option.value = i + 1
-            option.innerText = arr[i]
-            select.appendChild(option)
-        }
-    } else if (val === 3 || val === 4) {
-        document.getElementById('continuous').classList.remove('collapse')
-        document.getElementById('write_content').classList.remove('collapse')
-
-        if (val === 3) {
-            document.getElementById('continuous').classList.add('collapse')
-        }
-
-        var select = document.getElementById('func')
-        select.innerHTML = ''
-
-        let arr = ['Write Single Coils', 'Write Single Register', 'Write Multiple Coils', 'Write Multiple Register']
-        for (let i = 0; i < arr.length; i++) {
-            var option = document.createElement('option')
-            option.value = i + 1
-            option.innerText = arr[i]
-            select.appendChild(option)
-        }
-
-        window.api.query_modbus_log()
-    }
-}
-
-// change model
-document.getElementById('mode').addEventListener('change', handleModeChange, true)
-document.getElementById('mode').dispatchEvent(new Event('change'))
-
-// mqtt connect handle
-function handleMQTTConnection() {
-    var carousel_inst = new bootstrap.Carousel(document.getElementById('slide'))
-    console.log(carousel_inst)
-    // slide to publish
-    carousel_inst.to(1)
-}
-
-document.getElementById('mqtt-conn').addEventListener('click', handleMQTTConnection, true)
-
-document.getElementById('slide').addEventListener('slide.bs.carousel', event => {
-    console.log(event)
-    var items = document.querySelectorAll('a[data-bs-target="#slide"]')
-    items[event.from].classList.remove('border')
-    items[event.from].classList.remove('border-primary')
-    items[event.to].classList.add('border')
-    items[event.to].classList.add('border-primary')
-})
+// 導出初始化函數供index.html使用
+window.initializePage = initializePage;
