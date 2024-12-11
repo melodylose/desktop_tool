@@ -169,7 +169,10 @@ class FtpHandler {
             this.elements.password.disabled = false;
 
             if (message) {
-                alert(`Connection failed: ${message}`);
+                ipcRenderer.send('show-notification', {
+                    title: 'Connection Error',
+                    body: `Connection failed: ${message}`
+                });
             }
         }
     }
@@ -177,7 +180,10 @@ class FtpHandler {
     async initiateUpload() {
         console.log('Initiating upload process');
         if (!this.isConnected) {
-            alert('Please connect to FTP server first');
+            ipcRenderer.send('show-notification', {
+                title: 'Connection Required',
+                body: 'Please connect to FTP server first'
+            });
             return;
         }
 
@@ -197,7 +203,10 @@ class FtpHandler {
             }
         } catch (err) {
             console.error('Upload failed:', err);
-            alert('Upload failed: ' + err.message);
+            ipcRenderer.send('show-notification', {
+                title: 'Upload Error',
+                body: 'Upload failed: ' + err.message
+            });
         }
     }
 

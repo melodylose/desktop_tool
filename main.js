@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, Notification } = require('electron')
 const path = require('path')
 
 function createWindow () {
@@ -29,6 +29,14 @@ ipcMain.handle('show-file-dialog', async () => {
   });
 
   return result;
+});
+
+// Add notification handler
+ipcMain.on('show-notification', (event, notificationOptions) => {
+  new Notification({
+    title: notificationOptions.title,
+    body: notificationOptions.body
+  }).show();
 });
 
 app.whenReady().then(() => {
