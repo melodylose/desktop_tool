@@ -31,6 +31,19 @@ ipcMain.handle('show-file-dialog', async () => {
   return result;
 });
 
+// 添加目錄選擇對話框處理
+ipcMain.handle('show-directory-dialog', async () => {
+  const win = BrowserWindow.getFocusedWindow();
+  if (!win) return { filePaths: [] };
+
+  const result = await dialog.showOpenDialog(win, {
+    properties: ['openDirectory'],
+    title: 'Select Download Location'
+  });
+
+  return result;
+});
+
 // Add notification handler
 ipcMain.on('show-notification', (event, notificationOptions) => {
   new Notification({

@@ -5,19 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2024-12-26
 
 ### Added
-- Initial project setup
-- FTP operations functionality
-- Basic Electron application structure
+- FTP 檔案傳輸功能
+  - 支援檔案下載功能
+    - 可選擇多個檔案同時下載
+    - 顯示下載進度條
+    - 自動處理重複檔名
+  - 支援目錄導航功能
+    - 可點擊目錄進入子目錄
+    - 提供返回上層目錄選項
+  - 檔案選擇功能
+    - 支援檔案多選
+    - 提供全選/取消全選功能
+    - 自動禁用目錄選擇
 
 ### Changed
-
-### Deprecated
-
-### Removed
+- 改進檔案列表顯示
+  - 顯示檔案大小和修改時間
+  - 區分檔案和目錄圖示
+  - 優化目錄導航體驗
+- 改進下載功能
+  - 序列化檔案下載，避免並發錯誤
+  - 精確的下載進度顯示
+  - 清晰的下載結果通知
+- 代碼重構
+  - 模組化檔案列表顯示邏輯
+  - 優化下載進度追蹤機制
+  - 提升代碼可維護性
 
 ### Fixed
+- 修復多檔案下載時的並發問題
+- 修復進度條顯示超過 100% 的問題
+- 修復目錄選擇和全選功能的衝突
 
-### Security
+## [1.0.0] - 2024-12-25
+
+### Added
+- Modbus TCP 協議支援
+- MQTT 協議支援
+- 基本 FTP 連接功能
