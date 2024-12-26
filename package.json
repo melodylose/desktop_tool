@@ -1,11 +1,11 @@
 {
   "name": "electron-toolkit",
   "version": "1.1.0",
-  "description": "",
+  "description": "An Electron-based toolkit application for various utilities",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder build --win --mac --linux",
+    "build": "electron-builder build --win",
     "build:win": "electron-builder build --win",
     "build:mac": "electron-builder build --mac",
     "build:linux": "electron-builder build --linux"
@@ -18,12 +18,6 @@
     },
     "win": {
       "target": "nsis"
-    },
-    "mac": {
-      "target": "dmg"
-    },
-    "linux": {
-      "target": "AppImage"
     }
   },
   "author": "daniel",
@@ -31,7 +25,6 @@
   "dependencies": {
     "basic-ftp": "^5.0.5",
     "bootstrap": "^5.3.3",
-    "electron": "^33.2.1",
     "jquery": "^3.7.1",
     "jsmodbus": "^4.0.10",
     "modbus-serial": "^8.0.17",
@@ -39,6 +32,7 @@
     "serialport": "^12.0.0"
   },
   "devDependencies": {
+    "electron": "^33.2.1",
     "electron-builder": "^25.1.8"
   }
 }
