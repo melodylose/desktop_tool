@@ -4,7 +4,10 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-3">
-                    <input type="text" class="form-control" id="ftpServer" placeholder="FTP Server Address">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="ftpServer" placeholder="FTP Server Address" list="ftpHistory">
+                        <datalist id="ftpHistory"></datalist>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <input type="text" class="form-control" id="username" placeholder="Username">
@@ -13,8 +16,17 @@
                     <input type="password" class="form-control" id="password" placeholder="Password">
                 </div>
                 <div class="col-md-3">
-                    <button class="btn btn-primary w-100" id="connectBtn">
-                        <i class="fas fa-plug me-2"></i>Connect
+                    <button class="btn btn-primary w-100 position-relative" id="connectBtn">
+                        <span class="normal-state" style="display: inline-block;">
+                            <i class="fas fa-plug me-2"></i>Connect
+                        </span>
+                        <span class="connected-state" style="display: none;">
+                            <i class="fas fa-plug-circle-check me-2"></i>Disconnect
+                        </span>
+                        <span class="connecting-state" style="display: none;">
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Connecting...
+                        </span>
                     </button>
                 </div>
             </div>

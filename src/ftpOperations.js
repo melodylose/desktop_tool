@@ -11,6 +11,8 @@ class FtpHandler {
         this.currentPath = '/';
         this.totalBytes = 0;
         this.downloadedBytes = 0;
+        this.ftpHistory = [];
+        this.maxHistoryItems = 10;
     }
 
     initialize() {
@@ -19,11 +21,14 @@ class FtpHandler {
             // 獲取所有需要的 DOM 元素
             this.elements = {
                 connectBtn: document.getElementById('connectBtn'),
+                connectBtnNormalState: document.querySelector('#connectBtn .normal-state'),
+                connectBtnConnectingState: document.querySelector('#connectBtn .connecting-state'),
                 uploadBtn: document.getElementById('uploadBtn'),
                 downloadBtn: document.getElementById('downloadBtn'),
                 downloadProgress: document.getElementById('downloadProgress'),
                 sortableHeader: document.querySelector('.sortable'),
                 ftpServer: document.getElementById('ftpServer'),
+                ftpHistory: document.getElementById('ftpHistory'),
                 username: document.getElementById('username'),
                 password: document.getElementById('password'),
                 fileList: document.getElementById('fileList'),
@@ -31,7 +36,8 @@ class FtpHandler {
             };
 
             // 檢查必要的元素是否存在
-            const requiredElements = ['connectBtn', 'uploadBtn', 'downloadBtn', 'downloadProgress', 'ftpServer', 'username', 'password', 'fileList', 'selectAll'];
+            const requiredElements = ['connectBtn', 'uploadBtn', 'downloadBtn', 'downloadProgress', 
+                'ftpServer', 'ftpHistory', 'username', 'password', 'fileList', 'selectAll'];
             for (const key of requiredElements) {
                 if (!this.elements[key]) {
                     throw new Error(`Required element ${key} not found`);
@@ -80,6 +86,62 @@ class FtpHandler {
             const isChecked = e.target.checked;
             this.toggleSelectAll(isChecked);
         });
+
+        // 初始化時載入歷史記錄
+        this.loadFtpHistory();
+    }
+
+    loadFtpHistory() {
+        try {
+            const history = localStorage.getItem('ftpServerHistory');
+            if (history) {
+                this.ftpHistory = JSON.parse(history);
+                this.updateFtpHistoryDisplay();
+            }
+        } catch (error) {
+            console.error('Error loading FTP history:', error);
+            this.ftpHistory = [];
+        }
+    }
+
+    saveFtpHistory() {
+        try {
+            localStorage.setItem('ftpServerHistory', JSON.stringify(this.ftpHistory));
+        } catch (error) {
+            console.error('Error saving FTP history:', error);
+        }
+    }
+
+    updateFtpHistoryDisplay() {
+        if (!this.elements.ftpHistory) return;
+        
+        // 清空現有選項
+        this.elements.ftpHistory.innerHTML = '';
+        
+        // 添加歷史記錄
+        this.ftpHistory.forEach(url => {
+            const option = document.createElement('option');
+            option.value = url;
+            this.elements.ftpHistory.appendChild(option);
+        });
+    }
+
+    addToFtpHistory(url) {
+        if (!url) return;
+        
+        // 移除重複項
+        this.ftpHistory = this.ftpHistory.filter(item => item !== url);
+        
+        // 添加到開頭
+        this.ftpHistory.unshift(url);
+        
+        // 保持最大數量限制
+        if (this.ftpHistory.length > this.maxHistoryItems) {
+            this.ftpHistory = this.ftpHistory.slice(0, this.maxHistoryItems);
+        }
+        
+        this.saveFtpHistory();
+        this.updateFtpHistoryDisplay();
     }
 
     toggleSelectAll(checked) {
@@ -134,44 +196,145 @@ class FtpHandler {
         this.elements.downloadBtn.disabled = !hasFileSelected;
     }
 
+    validateFtpUrl(url) {
+        if (!url || typeof url !== 'string') {
+            return { isValid: false, message: 'FTP 伺服器地址不能為空' };
+        }
+
+        // 移除前綴 "ftp://" 如果存在
+        url = url.replace(/^ftp:\/\//i, '');
+
+        // 基本格式驗證
+        const urlPattern = /^[a-zA-Z0-9][-a-zA-Z0-9.]*[a-zA-Z0-9](:[0-9]{1,5})?$/;
+        if (!urlPattern.test(url)) {
+            return { isValid: false, message: 'FTP 伺服器地址格式無效' };
+        }
+
+        // 檢查端口範圍（如果有指定）
+        const portMatch = url.match(/:(\d+)$/);
+        if (portMatch) {
+            const port = parseInt(portMatch[1]);
+            if (port < 1 || port > 65535) {
+                return { isValid: false, message: 'FTP 端口必須在 1-65535 範圍內' };
+            }
+        }
+
+        return { isValid: true, message: '' };
+    }
+
+    setConnectingState(isConnecting) {
+        if (!this.elements.connectBtn) return;
+
+        const normalState = this.elements.connectBtn.querySelector('.normal-state');
+        const connectingState = this.elements.connectBtn.querySelector('.connecting-state');
+        const connectedState = this.elements.connectBtn.querySelector('.connected-state');
+
+        if (!normalState || !connectingState || !connectedState) {
+            console.error('Button states not found');
+            return;
+        }
+
+        this.elements.connectBtn.disabled = isConnecting;
+        
+        // 隱藏所有狀態
+        normalState.style.display = 'none';
+        connectingState.style.display = 'none';
+        connectedState.style.display = 'none';
+
+        // 顯示對應狀態
+        if (isConnecting) {
+            connectingState.style.display = 'inline-block';
+        } else if (this.isConnected) {
+            connectedState.style.display = 'inline-block';
+            this.elements.connectBtn.classList.remove('btn-primary');
+            this.elements.connectBtn.classList.add('btn-success');
+        } else {
+            normalState.style.display = 'inline-block';
+            this.elements.connectBtn.classList.remove('btn-success');
+            this.elements.connectBtn.classList.add('btn-primary');
+        }
+    }
+
+    updateConnectionStatus(connected, errorMessage = '') {
+        if (connected) {
+            this.elements.connectBtn.disabled = false;
+            this.setConnectingState(false);  // 這會顯示已連線狀態
+        } else {
+            this.elements.connectBtn.disabled = false;
+            this.setConnectingState(false);  // 這會顯示未連線狀態
+            if (errorMessage) {
+                // 顯示錯誤訊息
+                console.error(errorMessage);
+            }
+        }
+    }
+
     async connectToFTP() {
         if (!this.elements.ftpServer || !this.elements.username || !this.elements.password) {
             console.error('Required input elements not found');
             return;
         }
 
+        // 如果已經連線，則執行斷開連線
+        if (this.isConnected) {
+            await this.disconnectFromFTP();
+            return;
+        }
+
+        // 設置連線中狀態
+        this.setConnectingState(true);
+
         try {
+            const serverUrl = this.elements.ftpServer.value.trim();
+            const validation = this.validateFtpUrl(serverUrl);
+            
+            if (!validation.isValid) {
+                throw new Error(validation.message);
+            }
+
             await this.client.access({
-                host: this.elements.ftpServer.value,
+                host: serverUrl,
                 user: this.elements.username.value,
                 password: this.elements.password.value,
                 secure: false
             });
 
+            console.log('Connected to FTP server');
             this.isConnected = true;
             this.updateConnectionStatus(true);
             await this.listDirectory();
+            
+            // 成功連接後添加到歷史記錄
+            this.addToFtpHistory(serverUrl);
+
         } catch (err) {
             console.error('Connection failed:', err);
             this.updateConnectionStatus(false, err.message);
+            this.isConnected = false;
+        } finally {
+            // 恢復按鈕狀態
+            this.setConnectingState(false);
         }
     }
 
     async disconnectFromFTP() {
         try {
+            // 設置連線中狀態
+            this.setConnectingState(true);
+
             await this.client.close();
-            this.isConnected = false;
-            this.currentFiles = [];
-            this.updateConnectionStatus(false);
-            
-            // 清空檔案列表
-            if (this.elements.fileList) {
-                this.elements.fileList.innerHTML = '';
-            }
-            
             console.log('Disconnected from FTP server');
+            this.isConnected = false;
+            this.updateConnectionStatus(false);
+            this.currentFiles = [];
+            // 清空檔案列表
+            this.displayFileList([]);
+            
         } catch (err) {
-            console.error('Error disconnecting:', err);
+            console.error('Disconnection failed:', err);
+        } finally {
+            // 恢復按鈕狀態
+            this.setConnectingState(false);
         }
     }
 
@@ -544,35 +707,108 @@ class FtpHandler {
         this.displayFileList(this.currentFiles);
     }
 
-    updateConnectionStatus(success, message = '') {
-        if (!this.elements.connectBtn) return;
-
-        if (success) {
-            this.elements.connectBtn.classList.remove('btn-primary');
-            this.elements.connectBtn.classList.add('btn-success');
-            this.elements.connectBtn.innerHTML = '<i class="fas fa-check me-2"></i>Disconnect';
-            
-            // 禁用輸入欄位
-            this.elements.ftpServer.disabled = true;
-            this.elements.username.disabled = true;
-            this.elements.password.disabled = true;
+    updateConnectionStatus(connected, errorMessage = '') {
+        if (connected) {
+            this.elements.connectBtn.disabled = false;
+            this.setConnectingState(false);  // 這會顯示已連線狀態
         } else {
-            this.elements.connectBtn.classList.remove('btn-success');
-            this.elements.connectBtn.classList.add('btn-primary');
-            this.elements.connectBtn.innerHTML = '<i class="fas fa-plug me-2"></i>Connect';
-            
-            // 啟用輸入欄位
-            this.elements.ftpServer.disabled = false;
-            this.elements.username.disabled = false;
-            this.elements.password.disabled = false;
-
-            if (message) {
-                ipcRenderer.send('show-notification', {
-                    title: 'Connection Error',
-                    body: `Connection failed: ${message}`
-                });
+            this.elements.connectBtn.disabled = false;
+            this.setConnectingState(false);  // 這會顯示未連線狀態
+            if (errorMessage) {
+                // 顯示錯誤訊息
+                console.error(errorMessage);
             }
         }
+    }
+
+    async connectToFTP() {
+        if (!this.elements.ftpServer || !this.elements.username || !this.elements.password) {
+            console.error('Required input elements not found');
+            return;
+        }
+
+        // 如果已經連線，則執行斷開連線
+        if (this.isConnected) {
+            await this.disconnectFromFTP();
+            return;
+        }
+
+        // 設置連線中狀態
+        this.setConnectingState(true);
+        // 停用輸入欄位
+        this.setInputFieldsState(true);
+
+        try {
+            const serverUrl = this.elements.ftpServer.value.trim();
+            const validation = this.validateFtpUrl(serverUrl);
+            
+            if (!validation.isValid) {
+                throw new Error(validation.message);
+            }
+
+            await this.client.access({
+                host: serverUrl,
+                user: this.elements.username.value,
+                password: this.elements.password.value,
+                secure: false
+            });
+
+            console.log('Connected to FTP server');
+            this.isConnected = true;
+            this.updateConnectionStatus(true);
+            await this.listDirectory();
+            
+            // 成功連接後添加到歷史記錄
+            this.addToFtpHistory(serverUrl);
+
+        } catch (err) {
+            console.error('Connection failed:', err);
+            this.updateConnectionStatus(false, err.message);
+            this.isConnected = false;
+            // 連線失敗時啟用輸入欄位
+            this.setInputFieldsState(false);
+
+            ipcRenderer.send('show-notification', {
+                title: 'Connection Error',
+                body: 'Failed to connect to FTP server: ' + err.message
+            });
+        } finally {
+            // 恢復按鈕狀態
+            this.setConnectingState(false);
+        }
+    }
+
+    async disconnectFromFTP() {
+        try {
+            // 設置連線中狀態
+            this.setConnectingState(true);
+
+            await this.client.close();
+            console.log('Disconnected from FTP server');
+            this.isConnected = false;
+            this.updateConnectionStatus(false);
+            this.currentFiles = [];
+            // 清空檔案列表
+            this.displayFileList([]);
+            
+            // 斷開連線後啟用輸入欄位
+            this.setInputFieldsState(false);
+        } catch (err) {
+            console.error('Disconnection failed:', err);
+        } finally {
+            // 恢復按鈕狀態
+            this.setConnectingState(false);
+        }
+    }
+
+    setInputFieldsState(disabled) {
+        if (!this.elements.ftpServer || !this.elements.username || !this.elements.password) {
+            return;
+        }
+
+        this.elements.ftpServer.disabled = disabled;
+        this.elements.username.disabled = disabled;
+        this.elements.password.disabled = disabled;
     }
 
     formatFileSize(bytes) {
