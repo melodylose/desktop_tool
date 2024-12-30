@@ -163,10 +163,16 @@ class FtpHandler {
         const checkboxes = this.elements.fileList.querySelectorAll('input[type="checkbox"]:not([disabled])');
         checkboxes.forEach(checkbox => {
             checkbox.checked = checked;
-            if (checkbox.dataset.filename) {
-                this.handleRowSelection(checkbox, checkbox.dataset.filename);
+            const filename = checkbox.dataset?.filename || checkbox.getAttribute('data-filename');
+            if (filename) {
+                if (checked) {
+                    this.selectedFiles.add(filename);
+                } else {
+                    this.selectedFiles.delete(filename);
+                }
             }
         });
+        
         this.updateDownloadButton();
     }
 
@@ -542,6 +548,10 @@ class FtpHandler {
                     const fileName = filePath.split('\\').pop();
                     await this.client.uploadFrom(filePath, fileName);
                     console.log('File uploaded successfully:', fileName);
+                    ipcRenderer.send('show-notification', {
+                        title: 'Upload Success',
+                        body: 'File uploaded successfully: ' + fileName
+                    });
                 }
                 await this.listDirectory(); // Refresh the file list
             }
@@ -570,10 +580,6 @@ class FtpHandler {
     }
 
     async initiateDownload() {
-        if (!this.isConnected || this.selectedFiles.size === 0) {
-            return;
-        }
-
         try {
             // 獲取下載目錄
             const downloadPath = await this.getDownloadDirectory();
@@ -592,6 +598,9 @@ class FtpHandler {
             for (const filename of downloadableFiles) {
                 const result = await this.downloadSingleFile(filename, downloadPath, weightPerFile);
                 downloadResults.push(result);
+                if (!result.success) {
+                    throw new Error(`Failed to download ${filename}`);
+                }
             }
 
             // 確保顯示100%完成
@@ -610,7 +619,7 @@ class FtpHandler {
             
             ipcRenderer.send('show-notification', {
                 title: 'Download Error',
-                body: 'Failed to download files: ' + err.message
+                body: 'Download failed: ' + err.message
             });
         }
     }
@@ -684,9 +693,9 @@ class FtpHandler {
 
     updateProgressBar(percentage) {
         const progressBar = this.elements.downloadProgress.querySelector('.progress-bar');
-        const roundedPercentage = Math.min(Math.round(percentage * 10) / 10, 100);
-        progressBar.style.width = `${roundedPercentage}%`;
-        progressBar.textContent = `${roundedPercentage}%`;
+        const validPercentage = Math.max(0, Math.min(Math.round(percentage * 10) / 10, 100));
+        progressBar.style.width = `${validPercentage}%`;
+        progressBar.textContent = `${validPercentage}%`;
     }
 
     generateUniqueFileName(basePath, originalName) {
