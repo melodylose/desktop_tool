@@ -32,12 +32,13 @@ class FtpHandler {
                 username: document.getElementById('username'),
                 password: document.getElementById('password'),
                 fileList: document.getElementById('fileList'),
-                selectAll: document.getElementById('selectAll')
+                selectAll: document.getElementById('selectAll'),
+                anonymousLogin: document.getElementById('anonymousLogin')
             };
 
             // 檢查必要的元素是否存在
             const requiredElements = ['connectBtn', 'uploadBtn', 'downloadBtn', 'downloadProgress', 
-                'ftpServer', 'ftpHistory', 'username', 'password', 'fileList', 'selectAll'];
+                'ftpServer', 'ftpHistory', 'username', 'password', 'fileList', 'selectAll', 'anonymousLogin'];
             for (const key of requiredElements) {
                 if (!this.elements[key]) {
                     throw new Error(`Required element ${key} not found`);
@@ -85,6 +86,20 @@ class FtpHandler {
         this.elements.selectAll.addEventListener('change', (e) => {
             const isChecked = e.target.checked;
             this.toggleSelectAll(isChecked);
+        });
+
+        // 匿名登入checkbox事件
+        this.elements.anonymousLogin.addEventListener('change', (e) => {
+            const isAnonymous = e.target.checked;
+            this.elements.username.disabled = isAnonymous;
+            this.elements.password.disabled = isAnonymous;
+            if (isAnonymous) {
+                this.elements.username.value = 'anonymous';
+                this.elements.password.value = 'anonymous@example.com';
+            } else {
+                this.elements.username.value = '';
+                this.elements.password.value = '';
+            }
         });
 
         // 初始化時載入歷史記錄

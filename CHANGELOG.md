@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 新增最近連接的 FTP 伺服器記錄
   - 支援最多保存 10 筆歷史記錄
   - 提供快速連接歷史記錄功能
+- FTP 匿名登入支援
+  - 新增匿名登入選項
+  - 自動填入匿名登入認證
+  - 支援切換匿名/一般登入模式
 
 ### Changed
 - 改進 FTP 連接介面
