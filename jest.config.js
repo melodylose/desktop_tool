@@ -1,5 +1,5 @@
 module.exports = {
-    testEnvironment: 'node',
+    testEnvironment: 'jsdom',
     moduleFileExtensions: ['js', 'json'],
     testMatch: ['**/__tests__/**/*.js', '**/?(*.)+(spec|test).js'],
     coveragePathIgnorePatterns: ['/node_modules/'],
