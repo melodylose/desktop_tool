@@ -131,21 +131,60 @@ describe('FtpFileOperations', () => {
         });
 
         it('should update progress during download', async () => {
+            // Mock selected files and file info
+            const mockSelectedFiles = ['file1.txt'];
+            const mockFileInfo = { name: 'file1.txt', size: 1024 };
+            mockFtpClient.getCurrentFiles.mockReturnValue([mockFileInfo]);
+            
+            // Mock download directory
+            const downloadPath = 'C:\\downloads';
+            jest.spyOn(fileOperations, 'getDownloadDirectory').mockResolvedValue(downloadPath);
+            
+            // Mock fs module
+            const fs = require('fs');
+            fs.existsSync.mockReturnValue(false);
+            
+            // Mock UI elements
+            const mockProgressBar = { style: { width: '0%' } };
+            const mockProgressElement = {
+                classList: { add: jest.fn(), remove: jest.fn() },
+                querySelector: jest.fn().mockReturnValue(mockProgressBar)
+            };
+            mockUiHandler.getElements.mockReturnValue({
+                downloadProgress: mockProgressElement
+            });
+            mockUiHandler.updateProgressBar.mockImplementation(progress => {
+                mockProgressBar.style.width = `${progress}%`;
+            });
+            
+            // Mock getDownloadableFiles
+            jest.spyOn(fileOperations, 'getDownloadableFiles').mockReturnValue(['file1.txt']);
+            
+            // Mock successful download with progress updates
             let progressCallback;
             mockBasicFtpClient.trackProgress.mockImplementation(cb => {
                 progressCallback = cb;
+                return () => {}; // Return cleanup function
+            });
+            
+            mockBasicFtpClient.downloadTo.mockImplementation(async (localPath, filename) => {
+                expect(filename).toBe('file1.txt');
+                expect(localPath).toBe('C:\\downloads\\file1.txt');
+                
+                if (progressCallback) {
+                    progressCallback({ bytes: 512 }); // 50%
+                    expect(mockUiHandler.updateProgressBar).toHaveBeenCalledWith(expect.any(Number));
+                    
+                    progressCallback({ bytes: 1024 }); // 100%
+                    expect(mockUiHandler.updateProgressBar).toHaveBeenCalledWith(100);
+                }
+                return Promise.resolve();
             });
 
-            const downloadPromise = fileOperations.initiateDownload(mockSelectedFiles);
+            await fileOperations.initiateDownload(mockSelectedFiles);
             
-            // Simulate progress updates
-            progressCallback({ bytes: 512 }); // 50%
-            expect(mockUiHandler.updateProgressBar).toHaveBeenCalledWith(expect.any(Number));
-
-            progressCallback({ bytes: 1024 }); // 100%
-            expect(mockUiHandler.updateProgressBar).toHaveBeenCalledWith(100);
-
-            await downloadPromise;
+            expect(mockBasicFtpClient.downloadTo).toHaveBeenCalled();
+            expect(mockBasicFtpClient.trackProgress).toHaveBeenCalled();
         });
     });
 
