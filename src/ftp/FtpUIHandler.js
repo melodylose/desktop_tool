@@ -2,6 +2,7 @@ class FtpUIHandler {
     constructor() {
         this.elements = {};
         this.isConnected = false;
+        this.fileListHandler = null;
     }
 
     initialize() {
@@ -14,6 +15,7 @@ class FtpUIHandler {
                 connectBtnConnectingState: document.querySelector('#connectBtn .connecting-state'),
                 uploadBtn: document.getElementById('uploadBtn'),
                 downloadBtn: document.getElementById('downloadBtn'),
+                refreshBtn: document.getElementById('refreshBtn'),
                 downloadProgress: document.getElementById('downloadProgress'),
                 sortableHeader: document.querySelector('.sortable'),
                 ftpServer: document.getElementById('ftpServer'),
@@ -26,7 +28,7 @@ class FtpUIHandler {
             };
 
             // 檢查必要的元素是否存在
-            const requiredElements = ['connectBtn', 'uploadBtn', 'downloadBtn', 'downloadProgress', 
+            const requiredElements = ['connectBtn', 'uploadBtn', 'downloadBtn', 'refreshBtn', 'downloadProgress', 
                 'ftpServer', 'ftpHistory', 'username', 'password', 'fileList', 'selectAll', 'anonymousLogin'];
             for (const key of requiredElements) {
                 if (!this.elements[key]) {
@@ -76,10 +78,12 @@ class FtpUIHandler {
         if (connected) {
             this.isConnected = true;
             this.elements.connectBtn.disabled = false;
+            this.elements.refreshBtn.disabled = false;
             this.setConnectingState(false);  // 這會顯示已連線狀態
         } else {
             this.isConnected = false;
             this.elements.connectBtn.disabled = false;
+            this.elements.refreshBtn.disabled = true;
             this.setConnectingState(false);  // 這會顯示未連線狀態
             if (errorMessage) {
                 console.error(errorMessage);
@@ -117,15 +121,26 @@ class FtpUIHandler {
         }
     }
 
-    updateDownloadButton(hasSelection) {
-        if (this.elements.downloadBtn) {
-            this.elements.downloadBtn.disabled = !hasSelection || !this.isConnected;
-        }
+    updateDownloadButton() {
+        if (!this.elements.downloadBtn) return;
+        
+        const selectedFiles = this.fileListHandler ? this.fileListHandler.getSelectedFiles() : null;
+        const fileCount = selectedFiles ? (selectedFiles.size || selectedFiles.length || 0) : 0;
+        this.elements.downloadBtn.disabled = !this.isConnected || fileCount === 0;
     }
 
     getElements() {
         return this.elements;
     }
+
+    getFileListHandler() {
+        return this.fileListHandler;
+    }
+
+    setFileListHandler(handler) {
+        this.fileListHandler = handler;
+    }
+
 }
 
 module.exports = FtpUIHandler;

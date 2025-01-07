@@ -41,6 +41,9 @@ describe('FtpHandler', () => {
             downloadBtn: {
                 addEventListener: jest.fn()
             },
+            refreshBtn: {
+                addEventListener: jest.fn()
+            },
             sortableHeader: {
                 addEventListener: jest.fn()
             },
@@ -51,17 +54,9 @@ describe('FtpHandler', () => {
                 addEventListener: jest.fn(),
                 checked: false
             },
-            username: {
-                value: 'user',
-                disabled: false
-            },
-            password: {
-                value: 'pass',
-                disabled: false
-            },
-            ftpServer: { 
-                value: 'test.com' 
-            }
+            ftpServer: { value: 'ftp://test.com' },
+            username: { value: 'user' },
+            password: { value: 'pass' }
         };
 
         // Setup mock implementations
@@ -91,11 +86,10 @@ describe('FtpHandler', () => {
             initialize: jest.fn(),
             getElements: jest.fn().mockReturnValue(mockElements),
             setConnectingState: jest.fn(),
-            updateFileList: jest.fn(),
-            showError: jest.fn(),
-            showSuccess: jest.fn(),
             updateConnectionStatus: jest.fn(),
-            setInputFieldsState: jest.fn()
+            setInputFieldsState: jest.fn(),
+            setFileListHandler: jest.fn(),
+            updateProgressBar: jest.fn()
         };
 
         mockFileOperations = {
@@ -153,11 +147,11 @@ describe('FtpHandler', () => {
 
             expect(mockUiHandler.setConnectingState).toHaveBeenCalledWith(true);
             expect(mockFtpClient.connectToFTP).toHaveBeenCalledWith(
-                'test.com',
+                'ftp://test.com',
                 'user',
                 'pass'
             );
-            expect(mockHistoryManager.addToFtpHistory).toHaveBeenCalledWith('test.com');
+            expect(mockHistoryManager.addToFtpHistory).toHaveBeenCalledWith('ftp://test.com');
             expect(mockFileListHandler.displayFileList).toHaveBeenCalled();
             expect(mockUiHandler.updateConnectionStatus).toHaveBeenCalledWith(true);
         });

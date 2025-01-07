@@ -35,7 +35,15 @@ const mockElements = {
     fileList: { innerHTML: '' },
     selectAll: { checked: false },
     anonymousLogin: { checked: false },
-    sortableHeader: { classList: { add: jest.fn(), remove: jest.fn() } }
+    sortableHeader: { classList: { add: jest.fn(), remove: jest.fn() } },
+    refreshBtn: { 
+        disabled: false,
+        addEventListener: jest.fn(),
+        classList: { 
+            add: jest.fn(), 
+            remove: jest.fn() 
+        }
+    }
 };
 
 // Mock document.getElementById and querySelector
@@ -188,21 +196,28 @@ describe('FtpUIHandler', () => {
         beforeEach(() => {
             uiHandler.initialize();
             uiHandler.isConnected = true;
+            // Set up fileListHandler mock
+            uiHandler.fileListHandler = {
+                getSelectedFiles: jest.fn()
+            };
         });
 
         it('should enable download button when files are selected and connected', () => {
-            uiHandler.updateDownloadButton(true);
+            uiHandler.fileListHandler.getSelectedFiles.mockReturnValue(['file1.txt']);
+            uiHandler.updateDownloadButton();
             expect(uiHandler.elements.downloadBtn.disabled).toBe(false);
         });
 
         it('should disable download button when no files are selected', () => {
-            uiHandler.updateDownloadButton(false);
+            uiHandler.fileListHandler.getSelectedFiles.mockReturnValue([]);
+            uiHandler.updateDownloadButton();
             expect(uiHandler.elements.downloadBtn.disabled).toBe(true);
         });
 
         it('should disable download button when not connected', () => {
             uiHandler.isConnected = false;
-            uiHandler.updateDownloadButton(true);
+            uiHandler.fileListHandler.getSelectedFiles.mockReturnValue(['file1.txt']);
+            uiHandler.updateDownloadButton();
             expect(uiHandler.elements.downloadBtn.disabled).toBe(true);
         });
     });

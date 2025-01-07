@@ -34,7 +34,12 @@ class FtpFileOperations {
                         body: 'File uploaded successfully: ' + fileName
                     });
                 }
+                // 刷新檔案列表
                 await this.client.listDirectory();
+                const fileListHandler = this.uiHandler.getFileListHandler();
+                if (fileListHandler) {
+                    fileListHandler.displayFileList(this.client.getCurrentFiles());
+                }
             }
         } catch (err) {
             console.error('Upload failed:', err);

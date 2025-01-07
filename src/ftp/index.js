@@ -11,6 +11,7 @@ class FtpHandler {
         this.fileOperations = new FtpFileOperations(this.ftpClient, this.uiHandler);
         this.historyManager = new FtpHistoryManager(this.uiHandler);
         this.fileListHandler = new FtpFileListHandler(this.ftpClient, this.uiHandler, this.fileOperations);
+        this.uiHandler.setFileListHandler(this.fileListHandler);
     }
 
     initialize() {
@@ -48,6 +49,18 @@ class FtpHandler {
             console.log('Download button clicked');
             e.preventDefault();
             this.fileOperations.initiateDownload(this.fileListHandler.getSelectedFiles());
+        });
+
+        // 刷新按鈕事件
+        elements.refreshBtn.addEventListener('click', async (e) => {
+            console.log('Refresh button clicked');
+            e.preventDefault();
+            try {
+                await this.ftpClient.listDirectory();
+                this.fileListHandler.displayFileList(this.ftpClient.getCurrentFiles());
+            } catch (err) {
+                console.error('Failed to refresh file list:', err);
+            }
         });
 
         // 排序功能事件
