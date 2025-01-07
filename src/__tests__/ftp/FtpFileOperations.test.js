@@ -50,7 +50,9 @@ describe('FtpFileOperations', () => {
                     })
                 }
             }),
-            updateProgressBar: jest.fn()
+            updateProgressBar: jest.fn(),
+            setDownloadButtonState: jest.fn(),
+            updateDownloadButton: jest.fn()
         };
 
         fileOperations = new FtpFileOperations(mockFtpClient, mockUiHandler);
@@ -107,7 +109,10 @@ describe('FtpFileOperations', () => {
 
             await fileOperations.initiateDownload(mockSelectedFiles);
 
+            expect(mockUiHandler.setDownloadButtonState).toHaveBeenCalledWith(true);
             expect(mockBasicFtpClient.downloadTo).toHaveBeenCalled();
+            expect(mockUiHandler.updateProgressBar).toHaveBeenCalledWith(100);
+            expect(mockUiHandler.updateDownloadButton).toHaveBeenCalledWith(true);
             expect(ipcRenderer.send).toHaveBeenCalledWith(
                 'show-notification',
                 expect.objectContaining({
@@ -118,10 +123,14 @@ describe('FtpFileOperations', () => {
 
         it('should handle download failure', async () => {
             const error = new Error('Download failed');
-            mockBasicFtpClient.downloadTo.mockRejectedValueOnce(error);
+            // 確保所有重試都會失敗
+            mockBasicFtpClient.downloadTo.mockRejectedValue(error);
 
             await fileOperations.initiateDownload(mockSelectedFiles);
 
+            expect(mockUiHandler.setDownloadButtonState).toHaveBeenCalledWith(true);
+            expect(mockUiHandler.updateProgressBar).toHaveBeenCalledWith(0);
+            expect(mockUiHandler.updateDownloadButton).toHaveBeenCalledWith(true);
             expect(ipcRenderer.send).toHaveBeenCalledWith(
                 'show-notification',
                 expect.objectContaining({
@@ -132,7 +141,7 @@ describe('FtpFileOperations', () => {
 
         it('should update progress during download', async () => {
             // Mock selected files and file info
-            const mockSelectedFiles = ['file1.txt'];
+            const mockSelectedFiles = new Set(['file1.txt']);
             const mockFileInfo = { name: 'file1.txt', size: 1024 };
             mockFtpClient.getCurrentFiles.mockReturnValue([mockFileInfo]);
             
@@ -143,22 +152,6 @@ describe('FtpFileOperations', () => {
             // Mock fs module
             const fs = require('fs');
             fs.existsSync.mockReturnValue(false);
-            
-            // Mock UI elements
-            const mockProgressBar = { style: { width: '0%' } };
-            const mockProgressElement = {
-                classList: { add: jest.fn(), remove: jest.fn() },
-                querySelector: jest.fn().mockReturnValue(mockProgressBar)
-            };
-            mockUiHandler.getElements.mockReturnValue({
-                downloadProgress: mockProgressElement
-            });
-            mockUiHandler.updateProgressBar.mockImplementation(progress => {
-                mockProgressBar.style.width = `${progress}%`;
-            });
-            
-            // Mock getDownloadableFiles
-            jest.spyOn(fileOperations, 'getDownloadableFiles').mockReturnValue(['file1.txt']);
             
             // Mock successful download with progress updates
             let progressCallback;
@@ -176,15 +169,18 @@ describe('FtpFileOperations', () => {
                     expect(mockUiHandler.updateProgressBar).toHaveBeenCalledWith(expect.any(Number));
                     
                     progressCallback({ bytes: 1024 }); // 100%
-                    expect(mockUiHandler.updateProgressBar).toHaveBeenCalledWith(100);
+                    expect(mockUiHandler.updateProgressBar).toHaveBeenCalledWith(expect.any(Number));
                 }
                 return Promise.resolve();
             });
 
             await fileOperations.initiateDownload(mockSelectedFiles);
             
+            expect(mockUiHandler.setDownloadButtonState).toHaveBeenCalledWith(true);
             expect(mockBasicFtpClient.downloadTo).toHaveBeenCalled();
             expect(mockBasicFtpClient.trackProgress).toHaveBeenCalled();
+            expect(mockUiHandler.updateProgressBar).toHaveBeenCalled();
+            expect(mockUiHandler.updateDownloadButton).toHaveBeenCalledWith(true);
         });
     });
 

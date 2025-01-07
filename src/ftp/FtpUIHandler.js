@@ -99,14 +99,27 @@ class FtpUIHandler {
 
     updateProgressBar(percentage) {
         const progressBar = this.elements.downloadProgress.querySelector('.progress-bar');
-        const validPercentage = Math.max(0, Math.min(Math.round(percentage * 10) / 10, 100));
-        progressBar.style.width = `${validPercentage}%`;
-        progressBar.textContent = `${validPercentage}%`;
+        if (progressBar) {
+            const validPercentage = Math.max(0, Math.min(Math.round(percentage), 100));
+            progressBar.style.width = `${validPercentage}%`;
+            progressBar.textContent = `${validPercentage}%`;
+            
+            // 只在元素支援 setAttribute 時使用
+            if (typeof progressBar.setAttribute === 'function') {
+                progressBar.setAttribute('aria-valuenow', validPercentage);
+            }
+        }
+    }
+
+    setDownloadButtonState(disabled) {
+        if (this.elements.downloadBtn) {
+            this.elements.downloadBtn.disabled = disabled;
+        }
     }
 
     updateDownloadButton(hasSelection) {
         if (this.elements.downloadBtn) {
-            this.elements.downloadBtn.disabled = !hasSelection;
+            this.elements.downloadBtn.disabled = !hasSelection || !this.isConnected;
         }
     }
 

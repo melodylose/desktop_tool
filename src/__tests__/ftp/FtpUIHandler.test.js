@@ -165,11 +165,11 @@ describe('FtpUIHandler', () => {
         });
 
         it('should update progress bar percentage correctly', () => {
-            const percentage = 45.5;
+            const percentage = 45;
             uiHandler.updateProgressBar(percentage);
             const progressBar = uiHandler.elements.downloadProgress.querySelector('.progress-bar');
-            expect(progressBar.style.width).toBe('45.5%');
-            expect(progressBar.textContent).toBe('45.5%');
+            expect(progressBar.style.width).toBe('45%');
+            expect(progressBar.textContent).toBe('45%');
         });
 
         it('should handle invalid percentage values', () => {
@@ -177,21 +177,32 @@ describe('FtpUIHandler', () => {
             const progressBar = uiHandler.elements.downloadProgress.querySelector('.progress-bar');
             expect(progressBar.style.width).toBe('100%');
             expect(progressBar.textContent).toBe('100%');
+
+            uiHandler.updateProgressBar(-10);
+            expect(progressBar.style.width).toBe('0%');
+            expect(progressBar.textContent).toBe('0%');
         });
     });
 
     describe('updateDownloadButton', () => {
         beforeEach(() => {
             uiHandler.initialize();
+            uiHandler.isConnected = true;
         });
 
-        it('should enable download button when files are selected', () => {
+        it('should enable download button when files are selected and connected', () => {
             uiHandler.updateDownloadButton(true);
             expect(uiHandler.elements.downloadBtn.disabled).toBe(false);
         });
 
         it('should disable download button when no files are selected', () => {
             uiHandler.updateDownloadButton(false);
+            expect(uiHandler.elements.downloadBtn.disabled).toBe(true);
+        });
+
+        it('should disable download button when not connected', () => {
+            uiHandler.isConnected = false;
+            uiHandler.updateDownloadButton(true);
             expect(uiHandler.elements.downloadBtn.disabled).toBe(true);
         });
     });
