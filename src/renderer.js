@@ -1,7 +1,7 @@
 // 載入模組
 const ModbusHandler = require('./modbusOperations');
 const MqttHandler = require('./mqttOperations');
-const FtpHandler = require('./ftpOperations');
+const FtpHandler = require('./ftp/index');
 
 // 主程式邏輯
 const modbusHandler = new ModbusHandler();
