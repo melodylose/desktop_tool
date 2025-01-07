@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-01-07
+
+### Added
+- 新增測試覆蓋率報告功能
+  - 支援程式碼覆蓋率分析
+  - 提供詳細的測試報告介面
+  - 可視化測試覆蓋狀況
+
+### Changed
+- 改進 FTP 操作相關測試
+  - 優化檔案操作測試案例
+  - 加強錯誤處理測試
+  - 完善 UI 狀態管理測試
+
+### Fixed
+- 修復測試環境相關問題
+  - 改進測試環境配置
+  - 優化測試程式碼結構
+  - 修正測試案例執行問題
+
 ## [1.2.0] - 2024-12-30
 
 ### Added
