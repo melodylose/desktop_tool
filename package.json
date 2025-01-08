@@ -28,6 +28,7 @@
   "dependencies": {
     "basic-ftp": "^5.0.5",
     "bootstrap": "^5.3.3",
+    "ioredis": "^5.4.2",
     "jquery": "^3.7.1",
     "jsmodbus": "^4.0.10",
     "modbus-serial": "^8.0.17",

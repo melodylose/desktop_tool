@@ -13,7 +13,80 @@
                 <li class="list-group-item">
                     <i class="fas fa-server me-2"></i>FTP 通訊
                 </li>
+                <li class="list-group-item">
+                    <i class="fas fa-database me-2"></i>Redis 管理
+                </li>
             </ul>
+            
+            <div class="row row-cols-1 row-cols-md-2 g-4 mt-4">
+                <!-- Modbus Card -->
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-network-wired me-2"></i>Modbus 通訊
+                            </h5>
+                            <p class="card-text">
+                                支援 Modbus TCP/RTU 協議，可以輕鬆讀取和寫入 Modbus 裝置的資料。
+                            </p>
+                            <button class="btn btn-primary" onclick="document.getElementById('modbus-tab-btn').click()">
+                                開始使用
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MQTT Card -->
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-broadcast-tower me-2"></i>MQTT 功能
+                            </h5>
+                            <p class="card-text">
+                                連接到 MQTT Broker，訂閱和發布訊息。支援多主題訂閱和 QoS 設定。
+                            </p>
+                            <button class="btn btn-primary" onclick="document.getElementById('mqtt-tab-btn').click()">
+                                開始使用
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FTP Card -->
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-server me-2"></i>FTP 通訊
+                            </h5>
+                            <p class="card-text">
+                                輕鬆管理 FTP 伺服器上的檔案，支援檔案上傳、下載、刪除等操作。
+                            </p>
+                            <button class="btn btn-primary" onclick="document.getElementById('ftp-tab-btn').click()">
+                                開始使用
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Redis Card -->
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-database me-2"></i>Redis 管理
+                            </h5>
+                            <p class="card-text">
+                                連接並管理 Redis 資料庫，支援所有資料類型的操作。提供樹狀瀏覽介面。
+                            </p>
+                            <button class="btn btn-primary" onclick="document.getElementById('redis-tab-btn').click()">
+                                開始使用
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

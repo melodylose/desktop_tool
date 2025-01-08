@@ -2,11 +2,13 @@
 const ModbusHandler = require('./modbusOperations');
 const MqttHandler = require('./mqttOperations');
 const FtpHandler = require('./ftp/index');
+const RedisHandler = require('./redis/index');
 
 // 主程式邏輯
 const modbusHandler = new ModbusHandler();
 const mqttHandler = new MqttHandler();
 const ftpHandler = new FtpHandler();
+const redisHandler = new RedisHandler();
 
 // 初始化各頁面的功能
 function initializePage(pageName) {
@@ -31,6 +33,11 @@ function initializePage(pageName) {
                 // FTP頁面初始化
                 console.log('Initializing FTP page...');
                 ftpHandler.initialize();
+                break;
+            case 'redis':
+                // Redis頁面初始化
+                console.log('Initializing Redis page...');
+                redisHandler.initialize();
                 break;
             case 'options':
                 // 設置頁面初始化
@@ -90,6 +97,7 @@ window.addEventListener('beforeunload', () => {
     modbusHandler.cleanup && modbusHandler.cleanup();
     mqttHandler.cleanup && mqttHandler.cleanup();
     ftpHandler.cleanup && ftpHandler.cleanup();
+    redisHandler.cleanup && redisHandler.cleanup();
 });
 
 // 導出初始化函數供index.html使用

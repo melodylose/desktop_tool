@@ -1,0 +1,161 @@
+<div class="container-fluid h-100 p-4">
+    <div class="row h-100">
+        <!-- Server Tree Panel -->
+        <div class="col-md-3 h-100">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column p-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0">Redis 伺服器</h5>
+                        <button class="btn btn-sm btn-primary" id="addServerBtn">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div id="redisTree" class="overflow-auto flex-grow-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Panel -->
+        <div class="col-md-9 h-100">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-3 d-flex align-items-center">
+                        <button class="btn btn-primary me-2" id="addKeyBtn" disabled>
+                            <i class="fas fa-plus me-2"></i>新增鍵值
+                        </button>
+                        <button class="btn btn-danger me-2" id="deleteKeyBtn" disabled>
+                            <i class="fas fa-trash me-2"></i>刪除
+                        </button>
+                    </div>
+                    <div id="keyContent" class="overflow-auto flex-grow-1">
+                        <div class="text-center text-muted pt-5">
+                            <i class="fas fa-database fa-3x mb-3"></i>
+                            <p>選擇一個鍵值來查看內容</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Server Modal -->
+<div class="modal fade" id="addServerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增 Redis 伺服器</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">伺服器名稱</label>
+                    <input type="text" class="form-control" id="serverName" placeholder="輸入一個識別名稱">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">主機位址</label>
+                    <input type="text" class="form-control" id="redisServer" placeholder="例如: localhost">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">連接埠</label>
+                    <input type="number" class="form-control" id="redisPort" value="6379">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密碼 (選填)</label>
+                    <input type="password" class="form-control" id="redisPassword">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">資料庫編號</label>
+                    <input type="number" class="form-control" id="redisDb" value="0" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="connectBtn">
+                    <span class="normal-state" style="display: inline-block;">
+                        <i class="fas fa-plug me-2"></i>連線
+                    </span>
+                    <span class="connecting-state" style="display: none;">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        連線中...
+                    </span>
+                    <span class="connected-state" style="display: none;">
+                        <i class="fas fa-plug-circle-check me-2"></i>已連線
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Key Modal -->
+<div class="modal fade" id="addKeyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增鍵值</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">類型</label>
+                    <select class="form-select" id="keyType">
+                        <option value="string">String</option>
+                        <option value="list">List</option>
+                        <option value="hash">Hash</option>
+                        <option value="set">Set</option>
+                        <option value="zset">Sorted Set</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">鍵名</label>
+                    <input type="text" class="form-control" id="keyName">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">值</label>
+                    <textarea class="form-control" id="keyValue" rows="4"></textarea>
+                    <small class="form-text text-muted">
+                        對於List和Set，請使用JSON陣列格式。對於Hash和Sorted Set，請使用JSON物件格式。
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveKeyBtn">儲存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Server Context Menu -->
+<div class="dropdown-menu context-menu" id="serverContextMenu">
+    <a class="dropdown-item" href="#" id="addKeyMenuItem">
+        <i class="fas fa-plus me-2"></i>新增鍵值
+    </a>
+    <a class="dropdown-item" href="#" id="refreshMenuItem">
+        <i class="fas fa-sync-alt me-2"></i>重新整理
+    </a>
+    <div class="dropdown-divider"></div>
+    <a class="dropdown-item text-danger" href="#" id="disconnectMenuItem">
+        <i class="fas fa-plug-circle-xmark me-2"></i>中斷連線
+    </a>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">確認刪除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>確定要刪除鍵值 "<span id="deleteKeyName"></span>" 嗎？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">刪除</button>
+            </div>
+        </div>
+    </div>
+</div>
