@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2025-01-09
+
+### Added
+- 新增 Redis 操作功能改進
+  - 優化 Redis 連線管理
+  - 強化 Redis UI 操作介面
+  - 完善 Redis 測試架構
+
+### Changed
+- 改進 Redis 相關測試案例
+  - 新增 RedisUIHandler 測試
+  - 優化 ConnectionManager 測試
+  - 更新 UIStateManager 測試
+
 ## [1.2.1] - 2025-01-07
 
 ### Added
