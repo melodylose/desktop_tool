@@ -137,7 +137,9 @@ class RedisOperations extends EventEmitter {
             this.errorHandler = this.errorHandler.bind(this);
             
             client.on('connect', () => this.successHandler(connectionId));
-            client.on('error', (error) => this.errorHandler(connectionId, error));
+            client.on('error', (error) => {
+                this.errorHandler(connectionId, error);
+            });
             client.on('end', () => this._updateConnectionStatus(connectionId, 'end'));
             client.on('close', () => this._updateConnectionStatus(connectionId, 'close'));
 
@@ -251,14 +253,20 @@ class RedisOperations extends EventEmitter {
 
             console.log('Key info:', { type, ttl, value });
             return {
-                key,
-                type: type.toLowerCase(),
-                ttl,
-                value
+                success: true,
+                info: {
+                    key,
+                    type: type.toLowerCase(),
+                    ttl,
+                    value
+                }
             };
         } catch (error) {
             console.error('Error getting key info:', error);
-            throw error;
+            return {
+                success: false,
+                error: error.message
+            };
         }
     }
 

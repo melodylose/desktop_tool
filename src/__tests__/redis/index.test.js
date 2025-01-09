@@ -67,7 +67,7 @@ describe('RedisHandler', () => {
             ['connection2', mockClient]
         ]);
         
-        await handler.cleanup();
+        await handler.cleanup(true);
         
         // Should call disconnect for each connection
         expect(mockClient.disconnect).toHaveBeenCalledTimes(2);

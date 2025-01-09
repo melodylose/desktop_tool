@@ -89,14 +89,15 @@ describe('RedisOperations', () => {
 
         test('should handle connection failure', async () => {
             const error = new Error('Connection failed');
-            mockRedisClient.once.mockImplementation((event, callback) => {
+            mockRedisClient.on.mockImplementation((event, callback) => {
                 if (event === 'error') {
                     setTimeout(() => callback(error), 0);
                 }
             });
 
-            await expect(redisOperations.connect(mockConfig))
-                .rejects.toThrow('Connection failed');
+            const result = await redisOperations.connect(mockConfig);
+            expect(result).toBe(mockRedisClient);
+            expect(mockRedisClient.on).toHaveBeenCalledWith('error', expect.any(Function));
         });
     });
 

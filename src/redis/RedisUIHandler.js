@@ -9,7 +9,7 @@ class RedisUIHandler {
         this.elements = {};
         this.modal = null;
         this.addKeyModal = null;
-        this.ipcRenderer = window.require('electron').ipcRenderer;
+        this.ipcRenderer = ipcRenderer;
         this.initialized = false;
 
         this.connectionManager = new ConnectionManager(redisOperations);
@@ -447,11 +447,11 @@ class RedisUIHandler {
             }
 
             // 取得鍵值內容
-            const info = await this.redisOperations.getKeyInfo(connection.client, key);
-            if (info) {
-                this.displayKeyContent(info);
+            const response = await this.redisOperations.getKeyInfo(connection.client, key);
+            if (response.success) {
+                this.displayKeyContent(response.info);
             } else {
-                throw new Error('無法取得鍵值內容');
+                throw new Error(response.error || '無法取得鍵值內容');
             }
         } catch (error) {
             console.error('Error handling key select:', error);
@@ -831,11 +831,11 @@ class RedisUIHandler {
                     this.resetKeyContent();
                     this.uiStateManager.showNotification('鍵值已刪除', 'success');
                 } else {
-                    throw new Error(result.error || '刪除失敗');
+                    this.uiStateManager.showNotification('刪除失敗: ' + result.error, 'error');
                 }
             } catch (error) {
                 console.error('Error deleting key:', error);
-                this.uiStateManager.showNotification('刪除失敗: ' + error.message);
+                this.uiStateManager.showNotification('刪除失敗: ' + error.message, 'error');
             } finally {
                 deleteModal.hide();
                 // 移除事件監聽器
