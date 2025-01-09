@@ -2,12 +2,40 @@ class ConnectionManager {
     constructor(redisOperations) {
         this.redisOperations = redisOperations;
         this.connections = new Map();
-        this.currentConnection = null;
+        
+        // 從 RedisOperations 同步現有的連線
+        this._syncConnections();
+        
+        // 監聽 RedisOperations 的連線狀態變化
+        this.redisOperations.on('connection-status', ({ connectionId }) => {
+            this._syncConnections();
+        });
+    }
+
+    _syncConnections() {
+        // 清空現有連線
+        this.connections.clear();
+        
+        // 從 RedisOperations 同步所有連線
+        for (const [connectionId, connection] of this.redisOperations.connections) {
+            console.log('Syncing connection:', connectionId);
+            this.connections.set(connectionId, {
+                name: connection.name,
+                host: connection.config.host,
+                port: connection.config.port,
+                db: connection.config.db,
+                client: connection.client
+            });
+        }
+        
+        // 同步當前連線
+        this.currentConnection = this.redisOperations.getCurrentConnectionId();
     }
 
     async connect(connectionInfo) {
         const { name, host, port, password, db } = connectionInfo;
-        const connectionId = `${name}@${host}:${port}/${db}`;
+        // 使用 RedisOperations 的連線 ID 生成方式
+        const connectionId = this.redisOperations._generateConnectionId(host, port, db);
 
         try {
             const client = await this.redisOperations.connect({
@@ -18,25 +46,11 @@ class ConnectionManager {
                 db: parseInt(db)
             });
 
-            this.connections.set(connectionId, {
-                name,
-                host,
-                port,
-                db,
-                client
-            });
-
-            this.currentConnection = connectionId;
+            // 連線成功後同步連線狀態
+            this._syncConnections();
             return { success: true, connectionId };
         } catch (error) {
             console.error('Connection error:', error);
-            if (this.connections.has(connectionId)) {
-                const connection = this.connections.get(connectionId);
-                if (connection && connection.client) {
-                    await this.redisOperations.disconnect(connection.client);
-                }
-                this.connections.delete(connectionId);
-            }
             return { success: false, error: error.message };
         }
     }
@@ -46,11 +60,7 @@ class ConnectionManager {
             const connection = this.connections.get(connectionId);
             try {
                 await this.redisOperations.disconnect(connection.client);
-                this.connections.delete(connectionId);
-
-                if (connectionId === this.currentConnection) {
-                    this.currentConnection = null;
-                }
+                this.removeConnection(connectionId);
                 return { success: true };
             } catch (error) {
                 console.error('Disconnect error:', error);
@@ -58,6 +68,17 @@ class ConnectionManager {
             }
         }
         return { success: false, error: 'Connection not found' };
+    }
+
+    removeConnection(connectionId) {
+        if (this.connections.has(connectionId)) {
+            this.connections.delete(connectionId);
+            if (connectionId === this.currentConnection) {
+                this.currentConnection = null;
+            }
+            return true;
+        }
+        return false;
     }
 
     getCurrentConnection() {
@@ -78,10 +99,19 @@ class ConnectionManager {
     }
 
     setCurrentConnection(connectionId) {
+        console.log('ConnectionManager.setCurrentConnection called with:', connectionId);
+        // 先同步連線狀態
+        this._syncConnections();
+        console.log('Available connections after sync:', Array.from(this.connections.keys()));
+        
         if (this.connections.has(connectionId)) {
+            console.log('Connection found, setting current connection');
             this.currentConnection = connectionId;
+            // 同步 RedisOperations 的當前連線
+            this.redisOperations.setCurrentConnection(connectionId);
             return true;
         }
+        console.log('Connection not found in ConnectionManager');
         return false;
     }
 }

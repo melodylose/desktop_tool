@@ -93,11 +93,11 @@ function handleThemeChange(theme) {
 
 // 斷開連線
 window.addEventListener('beforeunload', () => {
-    // 清理資源
-    modbusHandler.cleanup && modbusHandler.cleanup();
-    mqttHandler.cleanup && mqttHandler.cleanup();
-    ftpHandler.cleanup && ftpHandler.cleanup();
-    redisHandler.cleanup && redisHandler.cleanup();
+    // 清理資源，傳入 true 表示應用程式正在關閉
+    modbusHandler.cleanup && modbusHandler.cleanup(true);
+    mqttHandler.cleanup && mqttHandler.cleanup(true);
+    ftpHandler.cleanup && ftpHandler.cleanup(true);
+    redisHandler.cleanup && redisHandler.cleanup(true);
 });
 
 // 導出初始化函數供index.html使用

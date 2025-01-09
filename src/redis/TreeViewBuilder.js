@@ -5,12 +5,21 @@ class TreeViewBuilder {
     }
 
     buildServerNode(connection, connectionId, isCurrentConnection, keyInfos = null) {
+        console.log('Building server node:', connectionId, connection);
+        
         const serverNode = document.createElement('div');
         serverNode.className = 'server-node';
         serverNode.setAttribute('data-connection-id', connectionId);
 
         const serverHeader = this._createServerHeader(connection);
         const keysContainer = this._createKeysContainer(connectionId, isCurrentConnection, keyInfos);
+
+        // 如果已經存在相同的節點，先移除它
+        const existingNode = this.treeContainer.querySelector(`.server-node[data-connection-id="${connectionId}"]`);
+        if (existingNode) {
+            console.log('Removing existing node:', connectionId);
+            existingNode.remove();
+        }
 
         serverNode.appendChild(serverHeader);
         serverNode.appendChild(keysContainer);
@@ -45,8 +54,8 @@ class TreeViewBuilder {
 
         const serverName = document.createElement('span');
         serverName.className = 'server-name';
-        serverName.textContent = connection.name;
-        serverName.title = connection.name;
+        serverName.textContent = connection.name || connection.config.name;
+        serverName.title = connection.name || connection.config.name;
         leftContainer.appendChild(serverName);
 
         return leftContainer;
@@ -58,7 +67,10 @@ class TreeViewBuilder {
 
         const serverInfo = document.createElement('span');
         serverInfo.className = 'server-info';
-        const serverUrl = `${connection.host}:${connection.port}/db${connection.db}`;
+        const host = connection.config.host || 'localhost';
+        const port = connection.config.port || 6379;
+        const db = connection.config.db || 0;
+        const serverUrl = `${host}:${port}/db${db}`;
         serverInfo.textContent = serverUrl;
         serverInfo.title = serverUrl;
         rightContainer.appendChild(serverInfo);
@@ -70,41 +82,46 @@ class TreeViewBuilder {
         const statusIndicator = document.createElement('span');
         statusIndicator.className = 'connection-status';
         
-        if (connection.client) {
-            try {
-                const status = connection.client.status;
-                this._updateStatusIndicator(statusIndicator, status);
-            } catch (error) {
-                console.error('Error checking Redis client status:', error);
-                statusIndicator.classList.add('error');
-                statusIndicator.title = '連線狀態檢查失敗';
-            }
-        } else {
-            statusIndicator.classList.add('disconnected');
-            statusIndicator.title = '未連線';
-        }
+        // 使用連線對象的狀態屬性
+        const status = connection.status || 'disconnected';
+        let title = '未連線';
 
-        return statusIndicator;
-    }
+        // 移除所有可能的狀態類別
+        statusIndicator.classList.remove('connected', 'connecting', 'disconnected', 'error');
 
-    _updateStatusIndicator(indicator, status) {
         switch(status) {
             case 'ready':
-                indicator.classList.add('connected');
-                indicator.title = '已連線';
+                title = '已連線';
+                statusIndicator.classList.add('connected');
                 break;
             case 'connecting':
-                indicator.classList.add('connecting');
-                indicator.title = '正在連線...';
+            case 'reconnecting':
+                title = '正在連線...';
+                statusIndicator.classList.add('connecting');
                 break;
-            case 'close':
+            case 'error':
+                title = connection.error || '連線錯誤';
+                statusIndicator.classList.add('error');
+                break;
             case 'end':
-                indicator.classList.add('disconnected');
-                indicator.title = '已斷開連線';
+            case 'close':
+            case 'disconnected':
+                title = '已斷開連線';
+                statusIndicator.classList.add('disconnected');
                 break;
             default:
-                indicator.title = '檢查連線狀態...';
+                title = '狀態未知';
+                statusIndicator.classList.add('error');
         }
+
+        console.log('Status indicator created:', {
+            status,
+            title,
+            className: statusIndicator.className
+        });
+
+        statusIndicator.title = title;
+        return statusIndicator;
     }
 
     _createKeysContainer(connectionId, isCurrentConnection, keyInfos) {
@@ -142,6 +159,11 @@ class TreeViewBuilder {
         keyName.textContent = key;
         keyNode.appendChild(keyName);
 
+        // 儲存節點資訊
+        keyNode.dataset.key = key;
+        keyNode.dataset.type = type;
+        keyNode.dataset.connectionId = connectionId;
+
         this.treeData.set(key, {
             element: keyNode,
             connectionId: connectionId,
@@ -150,6 +172,44 @@ class TreeViewBuilder {
         });
 
         return keyNode;
+    }
+
+    bindKeyNodeEvents(onKeySelect, container = null) {
+        console.log('Binding key node events...');
+        const targetContainer = container || this.treeContainer;
+        const keyNodes = targetContainer.querySelectorAll('.key-node');
+        console.log('Found key nodes:', keyNodes.length);
+        
+        keyNodes.forEach(keyNode => {
+            keyNode.addEventListener('click', () => {
+                console.log('Key node clicked');
+                // 移除其他節點的選中狀態
+                this.treeContainer.querySelectorAll('.key-node.selected').forEach(node => {
+                    if (node !== keyNode) {
+                        node.classList.remove('selected');
+                    }
+                });
+                
+                // 添加選中狀態
+                keyNode.classList.add('selected');
+                
+                // 呼叫選擇處理函數
+                const key = keyNode.dataset.key;
+                const connectionId = keyNode.dataset.connectionId;
+                console.log('Key node data:', { key, connectionId });
+                
+                if (key && connectionId && onKeySelect) {
+                    console.log('Calling onKeySelect handler');
+                    onKeySelect(key, connectionId);
+                } else {
+                    console.warn('Missing key data or handler:', { 
+                        hasKey: !!key, 
+                        hasConnectionId: !!connectionId, 
+                        hasHandler: !!onKeySelect 
+                    });
+                }
+            });
+        });
     }
 
     getTreeData() {

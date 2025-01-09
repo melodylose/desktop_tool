@@ -26,11 +26,31 @@
                         <button class="btn btn-danger me-2" id="deleteKeyBtn" disabled>
                             <i class="fas fa-trash me-2"></i>刪除
                         </button>
+                        <button class="btn btn-success me-2" id="saveExistingKeyBtn" disabled>
+                            <i class="fas fa-save me-2"></i>儲存
+                        </button>
                     </div>
                     <div id="keyContent" class="overflow-auto flex-grow-1">
-                        <div class="text-center text-muted pt-5">
+                        <!-- 初始提示 -->
+                        <div id="keyContentPlaceholder" class="text-center text-muted pt-5">
                             <i class="fas fa-database fa-3x mb-3"></i>
                             <p>選擇一個鍵值來查看內容</p>
+                        </div>
+                        
+                        <!-- 鍵值編輯表單 -->
+                        <div id="keyContentForm" class="p-3" style="display: none;">
+                            <div class="mb-3">
+                                <label for="keyName" class="form-label">鍵值名稱</label>
+                                <input type="text" class="form-control" id="keyName" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label for="keyType" class="form-label">類型</label>
+                                <input type="text" class="form-control" id="keyType" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label for="keyValue" class="form-label">值</label>
+                                <textarea class="form-control font-monospace" id="keyValue" rows="10" style="white-space: pre; tab-size: 2;"></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -99,7 +119,7 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label">類型</label>
-                    <select class="form-select" id="keyType">
+                    <select class="form-select" id="newKeyType">
                         <option value="string">String</option>
                         <option value="list">List</option>
                         <option value="hash">Hash</option>
@@ -109,11 +129,11 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">鍵名</label>
-                    <input type="text" class="form-control" id="keyName">
+                    <input type="text" class="form-control" id="newKeyName">
                 </div>
                 <div class="mb-3">
                     <label class="form-label">值</label>
-                    <textarea class="form-control" id="keyValue" rows="4"></textarea>
+                    <textarea class="form-control" id="newKeyValue" rows="4"></textarea>
                     <small class="form-text text-muted">
                         對於List和Set，請使用JSON陣列格式。對於Hash和Sorted Set，請使用JSON物件格式。
                     </small>
@@ -121,36 +141,39 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" id="saveKeyBtn">儲存</button>
+                <button type="button" class="btn btn-primary" id="saveNewKeyBtn">儲存</button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Server Context Menu -->
-<div class="dropdown-menu context-menu" id="serverContextMenu">
+<div class="dropdown-menu" id="serverContextMenu">
     <a class="dropdown-item" href="#" id="addKeyMenuItem">
         <i class="fas fa-plus me-2"></i>新增鍵值
     </a>
     <a class="dropdown-item" href="#" id="refreshMenuItem">
         <i class="fas fa-sync-alt me-2"></i>重新整理
     </a>
+    <a class="dropdown-item" href="#" id="disconnectMenuItem">
+        <i class="fas fa-plug me-2"></i>中斷連線
+    </a>
     <div class="dropdown-divider"></div>
-    <a class="dropdown-item text-danger" href="#" id="disconnectMenuItem">
-        <i class="fas fa-plug-circle-xmark me-2"></i>中斷連線
+    <a class="dropdown-item text-danger" href="#" id="removeServerMenuItem">
+        <i class="fas fa-trash me-2"></i>移除伺服器
     </a>
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">確認刪除</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="deleteConfirmModalLabel">確認刪除鍵值</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>確定要刪除鍵值 "<span id="deleteKeyName"></span>" 嗎？</p>
+                確定要刪除鍵值 <span id="deleteKeyName" class="fw-bold"></span> 嗎？此操作無法復原。
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>

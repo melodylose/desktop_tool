@@ -5,139 +5,160 @@ class RedisOperations extends EventEmitter {
     constructor() {
         super();
         this.connections = new Map();
+        this.currentConnectionId = null;
+        this.connectionConfigs = new Map();
+        
+        // 從 localStorage 恢復連線配置
+        this._restoreConnections();
+    }
+
+    _restoreConnections() {
+        try {
+            const savedConfigs = localStorage.getItem('redisConnections');
+            if (savedConfigs) {
+                const configs = JSON.parse(savedConfigs);
+                configs.forEach(config => {
+                    this.connectionConfigs.set(this._generateConnectionId(config.host, config.port, config.db), config);
+                });
+                
+                // 自動重新連線
+                this._reconnectAll();
+            }
+        } catch (error) {
+            console.error('Error restoring connections:', error);
+        }
+    }
+
+    async _reconnectAll() {
+        for (const [connectionId, config] of this.connectionConfigs) {
+            try {
+                await this.connect(config);
+            } catch (error) {
+                console.error('Error reconnecting to:', connectionId, error);
+            }
+        }
+    }
+
+    _saveConnections() {
+        try {
+            const configs = Array.from(this.connectionConfigs.values());
+            localStorage.setItem('redisConnections', JSON.stringify(configs));
+        } catch (error) {
+            console.error('Error saving connections:', error);
+        }
+    }
+
+    _generateConnectionId(host, port, db) {
+        // 使用一致的格式: host@port/db
+        const normalizedHost = host || 'localhost';
+        const normalizedPort = port || 6379;
+        const normalizedDb = db || 0;
+        const connectionId = `${normalizedHost}@${normalizedPort}/${normalizedDb}`;
+        console.log('RedisOperations generating connection ID:', { host, port, db }, '=>', connectionId);
+        return connectionId;
+    }
+
+    getCurrentConnection() {
+        return this.currentConnectionId ? this.connections.get(this.currentConnectionId) : null;
+    }
+
+    getCurrentConnectionId() {
+        return this.currentConnectionId;
+    }
+
+    getCurrentConnectionId() {
+        return this.currentConnectionId;
+    }
+
+    _updateConnectionStatus(connectionId, status, error = null) {
+        console.log('Updating connection status:', connectionId, status, error);
+        const connection = this.connections.get(connectionId);
+        if (connection) {
+            // 如果狀態沒有變化，不觸發事件
+            if (connection.status === status && connection.error === error) {
+                return;
+            }
+            
+            connection.status = status;
+            if (error) {
+                connection.error = error;
+            } else {
+                delete connection.error;
+            }
+            this.connections.set(connectionId, connection);
+            
+            // 發送狀態更新事件
+            this.emit('connection-status', {
+                connectionId,
+                status,
+                error
+            });
+        }
     }
 
     async connect(config) {
-        const { host, port, password, db, name } = config;
-        const connectionId = `${name}@${host}:${port}/${db}`;
-        let redis = null;
+        const normalizedConfig = {
+            host: config.host || 'localhost',
+            port: parseInt(config.port || 6379),
+            db: parseInt(config.db || 0),
+            name: config.name,
+            password: config.password
+        };
+        
+        console.log('Creating new Redis connection:', normalizedConfig);
+        
+        const connectionId = this._generateConnectionId(
+            normalizedConfig.host,
+            normalizedConfig.port,
+            normalizedConfig.db
+        );
+        
+        // 保存連線配置
+        this.connectionConfigs.set(connectionId, { ...normalizedConfig });
+        this._saveConnections();
+        
+        // 如果已經存在連線，先斷開
+        if (this.connections.has(connectionId)) {
+            await this.disconnectFromServer(connectionId);
+        }
 
         try {
-            console.log('Creating new Redis connection:', config);
-            redis = new Redis({
-                host,
-                port,
-                password: password || undefined,
-                db: parseInt(db) || 0,
-                connectTimeout: 5000, // 5秒連線超時
-                retryStrategy: (times) => {
-                    // 第一次連線失敗時不重試
-                    if (times === 1) {
-                        return false;
-                    }
-                    // 已建立連線後的重試邏輯
-                    const delay = Math.min(times * 50, 2000);
-                    console.log(`Attempting to reconnect... (attempt ${times})`);
-                    this.emit('connection-status', { 
-                        connectionId, 
-                        status: 'reconnecting',
-                        delay 
-                    });
-                    return delay;
-                },
-                maxRetriesPerRequest: 3
+            const client = new Redis({
+                host: normalizedConfig.host,
+                port: normalizedConfig.port,
+                password: normalizedConfig.password,
+                db: normalizedConfig.db,
+                retryStrategy: this.retryStrategy.bind(this),
+                maxRetriesPerRequest: null
             });
 
-            let isAuthenticated = false;
+            // 設置連線事件處理器
+            this.successHandler = this.successHandler.bind(this);
+            this.errorHandler = this.errorHandler.bind(this);
+            
+            client.on('connect', () => this.successHandler(connectionId));
+            client.on('error', (error) => this.errorHandler(connectionId, error));
+            client.on('end', () => this._updateConnectionStatus(connectionId, 'end'));
+            client.on('close', () => this._updateConnectionStatus(connectionId, 'close'));
 
-            // 監聽連線狀態
-            redis.on('connect', () => {
-                console.log('TCP connection established, waiting for authentication...');
-                redis.status = 'connecting';
-                this.emit('connection-status', { 
-                    connectionId, 
-                    status: 'connecting'
-                });
+            const displayName = normalizedConfig.name || 
+                `Redis@${normalizedConfig.host}:${normalizedConfig.port}/db${normalizedConfig.db}`;
+
+            // 保存連線
+            this.connections.set(connectionId, {
+                client,
+                status: 'connecting',
+                name: displayName,
+                config: normalizedConfig
             });
 
-            redis.on('ready', () => {
-                console.log('Redis connection established and authenticated');
-                isAuthenticated = true;
-                redis.status = 'ready';
-                this.emit('connection-status', { 
-                    connectionId, 
-                    status: 'connected'
-                });
-            });
+            this.currentConnectionId = connectionId;
+            this._updateConnectionStatus(connectionId, 'connecting');
 
-            redis.on('error', (error) => {
-                console.error('Redis connection error:', error);
-                redis.status = 'error';
-                this.emit('connection-status', { 
-                    connectionId, 
-                    status: 'error',
-                    error: error.message 
-                });
-            });
-
-            redis.on('end', () => {
-                console.log('Redis connection ended');
-                redis.status = 'end';
-                this.emit('connection-status', { 
-                    connectionId, 
-                    status: 'disconnected'
-                });
-                // 強制關閉連線並清理資源
-                if (redis) {
-                    redis.disconnect(true);
-                }
-                // 從連線列表中移除
-                this.connections.delete(connectionId);
-            });
-
-            // 等待連線和認證完成
-            await new Promise((resolve, reject) => {
-                const timeoutId = setTimeout(() => {
-                    if (redis) {
-                        redis.disconnect();
-                    }
-                    reject(new Error('連線超時'));
-                }, 5000);
-
-                // 成功處理器
-                const successHandler = () => {
-                    if (isAuthenticated) {
-                        clearTimeout(timeoutId);
-                        redis.removeListener('error', errorHandler);
-                        resolve();
-                    }
-                };
-
-                // 錯誤處理器
-                const errorHandler = (error) => {
-                    clearTimeout(timeoutId);
-                    if (redis) {
-                        redis.disconnect();
-                    }
-                    redis.removeListener('ready', successHandler);
-                    if (error.message.includes('NOAUTH')) {
-                        reject(new Error('Redis認證失敗：請檢查密碼是否正確'));
-                    } else {
-                        reject(error);
-                    }
-                };
-
-                redis.once('ready', successHandler);
-                redis.once('error', errorHandler);
-            });
-
-            // 驗證連線是否真的成功
-            try {
-                await redis.ping();
-                // 連線成功，儲存到連線列表
-                this.connections.set(connectionId, redis);
-                return redis;
-            } catch (error) {
-                if (redis) {
-                    redis.disconnect();
-                }
-                throw new Error('連線測試失敗：' + error.message);
-            }
+            return client;
         } catch (error) {
-            console.error('Failed to create Redis connection:', error);
-            if (redis) {
-                redis.disconnect();
-            }
+            console.error('Error creating Redis connection:', error);
+            this._updateConnectionStatus(connectionId, 'error', error);
             throw error;
         }
     }
@@ -145,7 +166,6 @@ class RedisOperations extends EventEmitter {
     async disconnect(client) {
         try {
             console.log('Disconnecting Redis client');
-            // 先嘗試優雅關閉
             try {
                 await client.quit();
             } catch (error) {
@@ -153,9 +173,8 @@ class RedisOperations extends EventEmitter {
                 client.disconnect(true);
             }
             
-            // 找到並移除對應的連線
             for (const [connectionId, redis] of this.connections.entries()) {
-                if (redis === client) {
+                if (redis.client === client) {
                     this.connections.delete(connectionId);
                     break;
                 }
@@ -168,10 +187,30 @@ class RedisOperations extends EventEmitter {
         }
     }
 
+    async disconnectFromServer(connectionId) {
+        try {
+            const connection = this.connections.get(connectionId);
+            if (!connection) {
+                throw new Error('Connection not found');
+            }
+
+            if (connection.client) {
+                console.log('Disconnecting from Redis server:', connectionId);
+                await connection.client.disconnect();
+                connection.client.status = 'end';
+                this._updateConnectionStatus(connectionId, 'disconnected');
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Error disconnecting from Redis server:', error);
+            throw error;
+        }
+    }
+
     async getKeys(client) {
         try {
             const keys = await client.keys('*');
-            // 獲取每個 key 的類型
             const keyInfos = await Promise.all(keys.map(async (key) => {
                 const type = await client.type(key);
                 return { key, type };
@@ -190,7 +229,7 @@ class RedisOperations extends EventEmitter {
             const ttl = await client.ttl(key);
             let value;
 
-            switch (type) {
+            switch (type.toLowerCase()) {
                 case 'string':
                     value = await client.get(key);
                     break;
@@ -210,19 +249,16 @@ class RedisOperations extends EventEmitter {
                     value = null;
             }
 
-            console.log('Key info:', { type, ttl, valueType: typeof value });
+            console.log('Key info:', { type, ttl, value });
             return {
-                success: true,
-                info: {
-                    key,
-                    type,
-                    ttl,
-                    value
-                }
+                key,
+                type: type.toLowerCase(),
+                ttl,
+                value
             };
         } catch (error) {
             console.error('Error getting key info:', error);
-            return { success: false, error: error.message };
+            throw error;
         }
     }
 
@@ -278,6 +314,130 @@ class RedisOperations extends EventEmitter {
             console.error('Error deleting key:', error);
             return { success: false, error: error.message };
         }
+    }
+
+    async reconnectToServer(connectionId) {
+        try {
+            const connection = this.connections.get(connectionId);
+            if (!connection) {
+                throw new Error('Connection not found');
+            }
+
+            // 更新狀態為正在重新連線
+            this._updateConnectionStatus(connectionId, 'reconnecting');
+
+            // 如果有舊的連線，先確保它被關閉
+            if (connection.client) {
+                try {
+                    await connection.client.disconnect();
+                } catch (error) {
+                    console.warn('Error disconnecting old client:', error);
+                }
+            }
+
+            console.log('Attempting to reconnect to Redis server:', connectionId);
+            
+            const config = {
+                host: connection.config.host,
+                port: connection.config.port,
+                password: connection.config.password,
+                db: connection.config.db,
+                name: connection.config.name,
+                retryStrategy: () => false,
+                // 增加連線超時設定
+                connectTimeout: 5000,
+                // 確保連線準備就緒
+                enableReadyCheck: true
+            };
+            
+            const newClient = new Redis(config);
+            
+            // 等待連線就緒
+            await new Promise((resolve, reject) => {
+                newClient.once('ready', () => {
+                    console.log('New client ready');
+                    resolve();
+                });
+                
+                newClient.once('error', (error) => {
+                    console.error('New client error:', error);
+                    reject(error);
+                });
+                
+                // 設定連線超時
+                setTimeout(() => {
+                    reject(new Error('Connection timeout'));
+                }, config.connectTimeout);
+            });
+
+            // 連線成功，更新客戶端和狀態
+            connection.client = newClient;
+            connection.status = 'ready';
+            this.connections.set(connectionId, connection);
+            this._updateConnectionStatus(connectionId, 'ready');
+            
+            return true;
+        } catch (error) {
+            console.error('Error reconnecting to Redis server:', error);
+            this._updateConnectionStatus(connectionId, 'error', error.message);
+            throw error;
+        }
+    }
+
+    async removeServer(connectionId) {
+        try {
+            console.log('Removing server:', connectionId);
+            
+            // 先斷開連線
+            await this.disconnectFromServer(connectionId);
+            
+            // 從連線列表中移除
+            this.connections.delete(connectionId);
+            
+            // 從配置中移除
+            this.connectionConfigs.delete(connectionId);
+            this._saveConnections();
+            
+            // 如果是當前連線，清除當前連線 ID
+            if (this.currentConnectionId === connectionId) {
+                this.currentConnectionId = null;
+            }
+            
+            return { success: true };
+        } catch (error) {
+            console.error('Error removing server:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    retryStrategy(times) {
+        const maxRetries = 3;
+        const maxDelay = 5000;
+        
+        if (times >= maxRetries) {
+            console.log('Max retries reached, stopping retry');
+            return false;
+        }
+
+        const delay = Math.min(times * 1000, maxDelay);
+        console.log(`Retry attempt ${times}, delay: ${delay}ms`);
+        return delay;
+    }
+
+    successHandler(connectionId) {
+        this._updateConnectionStatus(connectionId, 'ready');
+    }
+
+    errorHandler(connectionId, error) {
+        this._updateConnectionStatus(connectionId, 'error', error.message);
+    }
+
+    setCurrentConnection(connectionId) {
+        if (this.connections.has(connectionId)) {
+            this.currentConnectionId = connectionId;
+            return true;
+        }
+        return false;
     }
 }
 

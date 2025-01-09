@@ -25,14 +25,30 @@ class UIStateManager {
     }
 
     updateButtonStates(isConnected) {
+        console.log('Updating button states, isConnected:', isConnected);
+        // 連線相關按鈕
         this.elements.addKeyBtn.disabled = !isConnected;
-        this.elements.deleteKeyBtn.disabled = !isConnected;
+        this.elements.deleteKeyBtn.disabled = true; // 只有在選擇了鍵值時才啟用
+        this.elements.saveExistingKeyBtn.disabled = true; // 只有在選擇了鍵值時才啟用
+        this.elements.saveNewKeyBtn.disabled = !isConnected; // 只要有連線就可以新增鍵值
     }
 
-    showNotification(message, type = 'error') {
+    updateButtonStatesForConnection(connection) {
+        console.log('Updating button states for connection:', connection);
+        const isConnected = connection && connection.status === 'ready' && connection.client;
+        this.updateButtonStates(isConnected);
+    }
+
+    showNotification(message, type = 'info') {
         const { ipcRenderer } = require('electron');
+        const titles = {
+            'error': '錯誤',
+            'success': '成功',
+            'info': '提示',
+            'warning': '警告'
+        };
         ipcRenderer.send('show-notification', {
-            title: type === 'error' ? '錯誤' : '提示',
+            title: titles[type] || titles.info,
             body: message
         });
     }

@@ -7,5 +7,11 @@ module.exports = {
     testPathIgnorePatterns: ['/node_modules/'],
     collectCoverage: true,
     coverageReporters: ['text', 'lcov'],
-    coverageDirectory: 'coverage'
+    coverageDirectory: 'coverage',
+    reporters: [
+        "default",
+        ["./node_modules/jest-html-reporter", {
+            "pageTitle": "Test Report"
+        }]
+    ]
 };
