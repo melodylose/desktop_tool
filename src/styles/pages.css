@@ -166,7 +166,7 @@
 .key-node {
     display: flex;
     align-items: center;
-    padding: 4px 8px;
+    padding: 2px 4px;
     cursor: pointer;
     transition: background-color 0.2s;
 }
@@ -234,11 +234,70 @@
     color: white;
 }
 
+.type-json {
+    background-color: #2196F3;
+    color: white;
+}
+
 .key-name {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Key type icons */
+.key-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    vertical-align: middle;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.key-icon-string::before {
+    content: "Aa";
+    font-size: 12px;
+    color: #4CAF50;
+}
+
+.key-icon-hash::before {
+    content: "#";
+    font-size: 14px;
+    color: #FF9800;
+}
+
+.key-icon-list::before {
+    content: "[ ]";
+    font-size: 12px;
+    color: #2196F3;
+}
+
+.key-icon-set::before {
+    content: "{ }";
+    font-size: 12px;
+    color: #9C27B0;
+}
+
+.key-icon-zset::before {
+    content: "≤≥";
+    font-size: 12px;
+    color: #E91E63;
+}
+
+.key-icon-stream::before {
+    content: "~";
+    font-size: 14px;
+    color: #9c27b0;
+}
+
+.key-icon-json::before {
+    content: "{ }";
+    font-size: 12px;
+    color: #2196F3;
 }
 
 /* Redis tree specific styles */

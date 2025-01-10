@@ -149,8 +149,16 @@ class TreeViewBuilder {
         const keyNode = document.createElement('div');
         keyNode.className = 'key-node';
         
+        // Normalize type for JSON
+        const normalizedType = type.toLowerCase() === 'rejson-rl' ? 'json' : type;
+        
+        // Add key type icon
+        const keyIcon = document.createElement('span');
+        keyIcon.className = `key-icon key-icon-${normalizedType.toLowerCase()}`;
+        keyNode.appendChild(keyIcon);
+        
         const typeLabel = document.createElement('span');
-        typeLabel.className = `type-label type-${type.toLowerCase()}`;
+        typeLabel.className = `type-label type-${normalizedType.toLowerCase()}`;
         typeLabel.textContent = type;
         keyNode.appendChild(typeLabel);
 

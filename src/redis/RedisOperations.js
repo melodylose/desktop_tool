@@ -247,6 +247,15 @@ class RedisOperations extends EventEmitter {
                 case 'zset':
                     value = await client.zrange(key, 0, -1, 'WITHSCORES');
                     break;
+                case 'rejson-rl':
+                    try {
+                        const jsonStr = await client.call('JSON.GET', key, '$');
+                        value = jsonStr ? JSON.parse(jsonStr) : null;
+                    } catch (jsonError) {
+                        console.error('Error getting JSON value:', jsonError);
+                        value = null;
+                    }
+                    break;
                 default:
                     value = null;
             }
@@ -273,7 +282,7 @@ class RedisOperations extends EventEmitter {
     async setKey(client, key, type, value) {
         try {
             console.log('Setting key:', { key, type, value });
-            switch (type) {
+            switch (type.toLowerCase()) {
                 case 'string':
                     await client.set(key, value);
                     break;
@@ -299,6 +308,17 @@ class RedisOperations extends EventEmitter {
                     await client.del(key);
                     for (const [member, score] of Object.entries(value)) {
                         await client.zadd(key, score, member);
+                    }
+                    break;
+                case 'json':
+                case 'rejson-rl':
+                    try {
+                        // Parse the value if it's a string
+                        const jsonValue = typeof value === 'string' ? JSON.parse(value) : value;
+                        await client.call('JSON.SET', key, '$', JSON.stringify(jsonValue));
+                    } catch (jsonError) {
+                        console.error('Error setting JSON value:', jsonError);
+                        throw new Error('Invalid JSON format');
                     }
                     break;
                 default:
@@ -446,6 +466,143 @@ class RedisOperations extends EventEmitter {
             return true;
         }
         return false;
+    }
+
+    async getKeyType(key) {
+        if (!this.currentConnection) {
+            throw new Error('No active Redis connection');
+        }
+        try {
+            // First try to check if it's a JSON type using JSON.TYPE command
+            try {
+                const jsonType = await this.currentConnection.client.call('JSON.TYPE', key);
+                if (jsonType) {
+                    return 'json';  // Normalize ReJSON-RL type to 'json'
+                }
+            } catch (error) {
+                // If JSON.TYPE fails, continue with regular type check
+            }
+
+            // Fall back to regular type check
+            const type = await this.currentConnection.client.type(key);
+            // Normalize ReJSON-RL type if detected through regular type check
+            return type.toLowerCase() === 'rejson-rl' ? 'json' : type;
+        } catch (error) {
+            console.error('Error getting key type:', error);
+            throw error;
+        }
+    }
+
+    async getAllKeys() {
+        if (!this.currentConnection) {
+            throw new Error('No active Redis connection');
+        }
+
+        try {
+            const keys = await this.currentConnection.client.keys('*');
+            const keyInfos = await Promise.all(
+                keys.map(async (key) => {
+                    const type = await this.getKeyType(key);
+                    return { key, type: type.toUpperCase() };
+                })
+            );
+            return keyInfos;
+        } catch (error) {
+            console.error('Error getting all keys:', error);
+            throw error;
+        }
+    }
+
+    // ReJSON-RL Operations
+    async setJson(key, path, value) {
+        if (!this.currentConnection) {
+            throw new Error('No active Redis connection');
+        }
+        try {
+            const result = await this.currentConnection.client.call('JSON.SET', key, path, JSON.stringify(value));
+            this.emit('operationComplete', { operation: 'setJson', status: 'success', key, path });
+            return result;
+        } catch (error) {
+            this.emit('error', { operation: 'setJson', error: error.message });
+            throw error;
+        }
+    }
+
+    async getJson(key, path = '$') {
+        if (!this.currentConnection) {
+            throw new Error('No active Redis connection');
+        }
+        try {
+            const result = await this.currentConnection.client.call('JSON.GET', key, path);
+            return result ? JSON.parse(result) : null;
+        } catch (error) {
+            this.emit('error', { operation: 'getJson', error: error.message });
+            throw error;
+        }
+    }
+
+    async arrAppend(key, path, ...values) {
+        if (!this.currentConnection) {
+            throw new Error('No active Redis connection');
+        }
+        try {
+            const jsonValues = values.map(v => JSON.stringify(v));
+            const result = await this.currentConnection.client.call('JSON.ARRAPPEND', key, path, ...jsonValues);
+            this.emit('operationComplete', { operation: 'arrAppend', status: 'success', key, path });
+            return result;
+        } catch (error) {
+            this.emit('error', { operation: 'arrAppend', error: error.message });
+            throw error;
+        }
+    }
+
+    async arrPop(key, path, index = -1) {
+        if (!this.currentConnection) {
+            throw new Error('No active Redis connection');
+        }
+        try {
+            const result = await this.currentConnection.client.call('JSON.ARRPOP', key, path, index);
+            return result ? JSON.parse(result) : null;
+        } catch (error) {
+            this.emit('error', { operation: 'arrPop', error: error.message });
+            throw error;
+        }
+    }
+
+    async objKeys(key, path = '$') {
+        if (!this.currentConnection) {
+            throw new Error('No active Redis connection');
+        }
+        try {
+            return await this.currentConnection.client.call('JSON.OBJKEYS', key, path);
+        } catch (error) {
+            this.emit('error', { operation: 'objKeys', error: error.message });
+            throw error;
+        }
+    }
+
+    async objLen(key, path = '$') {
+        if (!this.currentConnection) {
+            throw new Error('No active Redis connection');
+        }
+        try {
+            return await this.currentConnection.client.call('JSON.OBJLEN', key, path);
+        } catch (error) {
+            this.emit('error', { operation: 'objLen', error: error.message });
+            throw error;
+        }
+    }
+
+    async type(key, path = '$') {
+        if (!this.currentConnection) {
+            throw new Error('No active Redis connection');
+        }
+        try {
+            return await this.currentConnection.client.call('JSON.TYPE', key, path);
+        } catch (error) {
+            this.emit('error', { operation: 'type', error: error.message });
+            throw error;
+        }
     }
 }
 

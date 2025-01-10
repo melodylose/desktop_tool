@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-01-10
+
+### Added
+- 改進 Redis 功能
+  - 新增 Redis key 儲存功能
+    - 實作 key 儲存和更新機制
+    - 支援多種資料類型的儲存
+    - 新增資料驗證和錯誤處理
+  - 優化 Redis UI 操作流程
+    - 改進連線狀態管理和顯示
+    - 強化錯誤訊息提示
+    - 新增切換伺服器時自動更新 KeyStatistics 功能
+  - 強化 Redis 資料處理機制
+    - 優化資料讀取和寫入效能
+    - 改進資料同步機制
+    - 新增自動 JSON 格式解析功能
+    - 支援 JSON 類型資料的自動識別和格式化
+
+### Changed
+- 更新 Redis 相關程式碼
+  - 優化 RedisUIHandler 功能
+    - 改進事件監聽機制
+    - 強化 UI 狀態管理
+    - 新增連線狀態自動更新
+    - 優化錯誤處理流程
+    - 實作伺服器切換時的 KeyStatistics 更新
+  - 改進 RedisOperations 操作邏輯
+    - 優化連線配置管理
+    - 改進自動重連機制
+    - 強化資料操作效能
+    - 新增 JSON 資料類型的自動解析處理
+  - 更新 TreeViewBuilder 顯示結構
+    - 改進節點建立和更新機制
+    - 優化伺服器節點管理
+    - 強化資料顯示效能
+    - 支援 JSON 格式資料類型的顯示樣式
+
 ## [1.2.2] - 2025-01-09
 
 ### Added

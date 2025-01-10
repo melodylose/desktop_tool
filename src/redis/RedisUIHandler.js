@@ -34,14 +34,6 @@ class RedisUIHandler {
             this._initializeEventListeners();
             this._setupContextMenu();
 
-            // 監聽頁面可見性變化
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) {
-                    console.log('Page became visible, updating tree...');
-                    this.updateTree();
-                }
-            });
-
             // 重新構建現有連線的樹狀視圖
             console.log('Updating initial tree view...');
             this.updateTree();
@@ -79,6 +71,9 @@ class RedisUIHandler {
             keyName: document.getElementById('keyName'),
             keyType: document.getElementById('keyType'),
             keyValue: document.getElementById('keyValue'),
+            // Key Statistics elements
+            keyStatistics: document.getElementById('keyStatistics'),
+            keyStatsBody: document.getElementById('keyStatsBody'),
             // 新增鍵值的表單元素
             newKeyName: document.getElementById('newKeyName'),
             newKeyType: document.getElementById('newKeyType'),
@@ -116,6 +111,40 @@ class RedisUIHandler {
     _initializeEventListeners() {
         console.log('Initializing event listeners...');
         
+        // Add window resize event listener
+        window.addEventListener('resize', () => {
+            // No need to rebuild the tree on resize
+            // Just ensure the tree container is properly sized
+            if (this.elements.redisTree) {
+                const treeContainer = this.elements.redisTree;
+                // Preserve expanded/collapsed states
+                const expandedNodes = Array.from(treeContainer.querySelectorAll('.server-node')).filter(node => {
+                    const keysContainer = node.querySelector('.keys-container');
+                    return keysContainer && keysContainer.style.display !== 'none';
+                });
+                
+                // Preserve selected key
+                const selectedKey = treeContainer.querySelector('.key-node.selected');
+                
+                // After resize, restore states
+                expandedNodes.forEach(node => {
+                    const keysContainer = node.querySelector('.keys-container');
+                    if (keysContainer) {
+                        keysContainer.style.display = 'block';
+                    }
+                    const expandIcon = node.querySelector('.expand-icon');
+                    if (expandIcon) {
+                        expandIcon.innerHTML = '▼';
+                    }
+                });
+                
+                // Restore selected key
+                if (selectedKey) {
+                    selectedKey.classList.add('selected');
+                }
+            }
+        });
+        
         this.elements.addServerBtn.addEventListener('click', () => {
             this.resetConnectionForm();
             this.modal.show();
@@ -149,6 +178,36 @@ class RedisUIHandler {
 
         document.addEventListener('click', () => this.hideContextMenu());
         this.elements.redisTree.addEventListener('contextmenu', (e) => this.showContextMenu(e));
+
+        // Redis tree click event
+        this.elements.redisTree.addEventListener('click', (event) => {
+            // Handle server node click
+            const serverHeader = event.target.closest('.server-header');
+            if (serverHeader) {
+                const serverNode = serverHeader.closest('.server-node');
+                if (serverNode) {
+                    // Hide key content and show key statistics
+                    this.resetKeyContent();
+                    const connectionId = serverNode.getAttribute('data-connection-id');
+                    if (connectionId) {
+                        this.updateKeyStatistics(connectionId);
+                    }
+                }
+                return;
+            }
+
+            // Handle key node click
+            const keyNode = event.target.closest('.key-node');
+            if (keyNode) {
+                // Hide key statistics and show key content
+                this.elements.keyStatistics.style.display = 'none';
+                const keyName = keyNode.querySelector('.key-name').textContent;
+                const connectionId = keyNode.closest('.server-node').getAttribute('data-connection-id');
+                if (keyName && connectionId) {
+                    this.handleKeySelect(keyName, connectionId);
+                }
+            }
+        });
     }
 
     async handleConnectionStatus(connectionId, { status, error, delay }) {
@@ -459,6 +518,36 @@ class RedisUIHandler {
         }
     }
 
+    _formatValue(type, value) {
+        try {
+            switch (type.toLowerCase()) {
+                case 'string':
+                    return value;
+                case 'list':
+                case 'set':
+                case 'zset':
+                    return Array.isArray(value) ? value.join('\n') : value;
+                case 'hash':
+                    if (typeof value === 'object' && value !== null) {
+                        return Object.entries(value)
+                            .map(([k, v]) => `${k}=${v}`)
+                            .join('\n');
+                    }
+                    return value;
+                case 'json':
+                case 'rejson-rl':
+                    return typeof value === 'object' 
+                        ? JSON.stringify(value, null, 2) 
+                        : value;
+                default:
+                    return value;
+            }
+        } catch (error) {
+            console.error('Error formatting value:', error);
+            return value;
+        }
+    }
+
     displayKeyContent(info) {
         const { key, type, value } = info;
         console.log('Displaying key content:', info);
@@ -472,14 +561,26 @@ class RedisUIHandler {
                 form.style.display = 'block';
             }
 
+            // Normalize type for JSON
+            const normalizedType = type.toLowerCase() === 'rejson-rl' ? 'json' : type;
+
             // 更新類型選擇器
-            this.elements.keyType.value = type;
+            this.elements.keyType.value = normalizedType;
             
             // 更新鍵值名稱
             this.elements.keyName.value = key;
             
+            // 根據類型設置特殊顯示模式
+            if (normalizedType.toLowerCase() === 'json') {
+                this.elements.keyValue.style.fontFamily = 'monospace';
+                this.elements.keyValue.style.whiteSpace = 'pre';
+            } else {
+                this.elements.keyValue.style.fontFamily = '';
+                this.elements.keyValue.style.whiteSpace = '';
+            }
+            
             // 更新值內容
-            this.elements.keyValue.value = this._formatValue(type, value);
+            this.elements.keyValue.value = this._formatValue(normalizedType, value);
             
             // 更新按鈕狀態
             this.elements.deleteKeyBtn.disabled = false;
@@ -489,82 +590,6 @@ class RedisUIHandler {
         } catch (error) {
             console.error('Error displaying key content:', error);
             this.uiStateManager.showNotification('顯示鍵值內容時發生錯誤', 'error');
-        }
-    }
-
-    _formatValue(type, value) {
-        if (!value) return '';
-        
-        try {
-            switch (type) {
-                case 'string':
-                    try {
-                        // 嘗試解析為 JSON
-                        const parsed = JSON.parse(value);
-                        return JSON.stringify(parsed, null, 2);
-                    } catch {
-                        // 如果不是 JSON，直接返回原值
-                        return value;
-                    }
-                case 'list':
-                case 'set':
-                    if (Array.isArray(value)) {
-                        try {
-                            // 嘗試解析每個元素為 JSON
-                            const parsedArray = value.map(item => {
-                                try {
-                                    return JSON.parse(item);
-                                } catch {
-                                    return item;
-                                }
-                            });
-                            return JSON.stringify(parsedArray, null, 2);
-                        } catch {
-                            return JSON.stringify(value, null, 2);
-                        }
-                    }
-                    return String(value);
-                case 'hash':
-                    try {
-                        // 將 hash 轉換為格式化的 JSON
-                        const formattedHash = {};
-                        for (const [k, v] of Object.entries(value)) {
-                            try {
-                                formattedHash[k] = JSON.parse(v);
-                            } catch {
-                                formattedHash[k] = v;
-                            }
-                        }
-                        return JSON.stringify(formattedHash, null, 2);
-                    } catch {
-                        return JSON.stringify(value, null, 2);
-                    }
-                case 'zset':
-                    if (Array.isArray(value)) {
-                        try {
-                            // 將 zset 轉換為格式化的物件
-                            const formattedZSet = {};
-                            for (let i = 0; i < value.length; i += 2) {
-                                const member = value[i];
-                                const score = value[i + 1];
-                                try {
-                                    formattedZSet[member] = parseFloat(score);
-                                } catch {
-                                    formattedZSet[member] = score;
-                                }
-                            }
-                            return JSON.stringify(formattedZSet, null, 2);
-                        } catch {
-                            return JSON.stringify(value, null, 2);
-                        }
-                    }
-                    return String(value);
-                default:
-                    return JSON.stringify(value, null, 2);
-            }
-        } catch (error) {
-            console.error('Error formatting value:', error);
-            return String(value);
         }
     }
 
@@ -764,7 +789,7 @@ class RedisUIHandler {
 
     _parseKeyValue(keyType, keyValue) {
         let value = keyValue;
-        switch (keyType) {
+        switch (keyType.toLowerCase()) {
             case 'list':
             case 'set':
                 value = JSON.parse(keyValue);
@@ -777,6 +802,15 @@ class RedisUIHandler {
                 value = JSON.parse(keyValue);
                 if (typeof value !== 'object' || Array.isArray(value)) {
                     throw new Error('必須是JSON物件格式');
+                }
+                break;
+            case 'json':
+            case 'rejson-rl':
+                try {
+                    // Attempt to parse the JSON value
+                    value = JSON.parse(keyValue);
+                } catch (error) {
+                    throw new Error('必須是有效的JSON格式');
                 }
                 break;
         }
@@ -852,7 +886,66 @@ class RedisUIHandler {
         deleteModal.show();
     }
 
-    async showContextMenu(event) {
+    async updateKeyStatistics(connectionId) {
+        if (!connectionId) return;
+        
+        try {
+            const connection = this.redisOperations.connections.get(connectionId);
+            if (!connection || !connection.client) return;
+
+            // Get server info
+            const serverInfo = connection.config;
+            const serverName = `${serverInfo.host}:${serverInfo.port}${serverInfo.name ? ` (${serverInfo.name})` : ''}`;
+
+            // Get all databases info
+            const info = await connection.client.info('keyspace');
+            const keyspaceInfo = {};
+            
+            // Parse Redis INFO keyspace response
+            info.split('\n').forEach(line => {
+                if (line.startsWith('db')) {
+                    const [db, stats] = line.split(':');
+                    const dbNum = db.substring(2);
+                    const matches = stats.match(/keys=(\d+),expires=(\d+),avg_ttl=(\d+)/);
+                    
+                    if (matches) {
+                        keyspaceInfo[dbNum] = {
+                            total: parseInt(matches[1]),
+                            expires: parseInt(matches[2]),
+                            avgTtl: parseInt(matches[3])
+                        };
+                    }
+                }
+            });
+
+            // Update server name
+            const statsTitle = this.elements.keyStatistics.querySelector('h6');
+            statsTitle.textContent = `Key Statistics - ${serverName}`;
+
+            // Update statistics table
+            const tbody = this.elements.keyStatsBody;
+            tbody.innerHTML = '';
+            
+            Object.entries(keyspaceInfo).forEach(([db, stats]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${db}</td>
+                    <td>${stats.total}</td>
+                    <td>${stats.expires}</td>
+                    <td>${stats.avgTtl}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Show the statistics table
+            this.elements.keyStatistics.style.display = 'block';
+        } catch (error) {
+            console.error('Error updating key statistics:', error);
+            this.uiStateManager.showNotification('無法更新鍵值統計資訊', 'error');
+        }
+    }
+
+    showContextMenu(event) {
         event.preventDefault();
         
         // 找到最近的伺服器節點

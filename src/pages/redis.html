@@ -30,6 +30,24 @@
                             <i class="fas fa-save me-2"></i>儲存
                         </button>
                     </div>
+                    <div class="mb-3">
+                        <!-- Key Statistics Table -->
+                        <div id="keyStatistics" class="mb-3" style="display: none;">
+                            <h6 class="mb-2">Key Statistics</h6>
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>資料庫</th>
+                                        <th>總鍵值數</th>
+                                        <th>有效鍵值數</th>
+                                        <th>平均 TTL (秒)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="keyStatsBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     <div id="keyContent" class="overflow-auto flex-grow-1">
                         <!-- 初始提示 -->
                         <div id="keyContentPlaceholder" class="text-center text-muted pt-5">
