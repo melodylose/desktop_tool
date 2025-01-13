@@ -65,6 +65,22 @@
                                 <label for="keyType" class="form-label">類型</label>
                                 <input type="text" class="form-control" id="keyType" readonly>
                             </div>
+                            <!-- Stream Data Display -->
+                            <div id="streamContent" class="mb-3" style="display: none;">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Timestamp</th>
+                                                <th>Fields</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="streamEntries">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                             <div class="mb-3">
                                 <label for="keyValue" class="form-label">值</label>
                                 <textarea class="form-control font-monospace" id="keyValue" rows="10" style="white-space: pre; tab-size: 2;"></textarea>
@@ -196,6 +212,25 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn">刪除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Server Delete Confirmation Modal -->
+<div class="modal fade" id="serverDeleteConfirmModal" tabindex="-1" aria-labelledby="serverDeleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serverDeleteConfirmModalLabel">確認刪除伺服器</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                確定要刪除此伺服器連線嗎？此操作無法復原。
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmServerDeleteBtn">刪除</button>
             </div>
         </div>
     </div>

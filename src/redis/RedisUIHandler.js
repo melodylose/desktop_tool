@@ -78,6 +78,9 @@ class RedisUIHandler {
             newKeyName: document.getElementById('newKeyName'),
             newKeyType: document.getElementById('newKeyType'),
             newKeyValue: document.getElementById('newKeyValue'),
+            // Stream content elements
+            streamContent: document.getElementById('streamContent'),
+            streamEntries: document.getElementById('streamEntries'),
             // 其他元素
             serverContextMenu: document.getElementById('serverContextMenu'),
             addKeyMenuItem: document.getElementById('addKeyMenuItem'),
@@ -86,7 +89,9 @@ class RedisUIHandler {
             removeServerMenuItem: document.getElementById('removeServerMenuItem'),
             // modal 元素
             addKeyModal: document.getElementById('addKeyModal'),
-            addServerModal: document.getElementById('addServerModal')
+            addServerModal: document.getElementById('addServerModal'),
+            keyContentForm: document.getElementById('keyContentForm'),
+            keyContentPlaceholder: document.getElementById('keyContentPlaceholder')
         };
 
         // 檢查必要的元素是否存在
@@ -94,7 +99,8 @@ class RedisUIHandler {
             'addServerBtn', 'connectBtn', 'serverName', 'redisServer', 'redisPort',
             'redisDb', 'addKeyBtn', 'deleteKeyBtn', 'saveExistingKeyBtn', 'saveNewKeyBtn',
             'redisTree', 'keyContent', 'serverContextMenu', 'keyName', 'keyType', 'keyValue',
-            'newKeyName', 'newKeyType', 'newKeyValue', 'addKeyModal'
+            'newKeyName', 'newKeyType', 'newKeyValue', 'addKeyModal', 'keyContentForm',
+            'keyContentPlaceholder', 'streamContent', 'streamEntries'
         ];
 
         for (const key of requiredElements) {
@@ -111,103 +117,104 @@ class RedisUIHandler {
     _initializeEventListeners() {
         console.log('Initializing event listeners...');
         
-        // Add window resize event listener
-        window.addEventListener('resize', () => {
-            // No need to rebuild the tree on resize
-            // Just ensure the tree container is properly sized
-            if (this.elements.redisTree) {
-                const treeContainer = this.elements.redisTree;
-                // Preserve expanded/collapsed states
-                const expandedNodes = Array.from(treeContainer.querySelectorAll('.server-node')).filter(node => {
-                    const keysContainer = node.querySelector('.keys-container');
-                    return keysContainer && keysContainer.style.display !== 'none';
-                });
-                
-                // Preserve selected key
-                const selectedKey = treeContainer.querySelector('.key-node.selected');
-                
-                // After resize, restore states
-                expandedNodes.forEach(node => {
-                    const keysContainer = node.querySelector('.keys-container');
-                    if (keysContainer) {
-                        keysContainer.style.display = 'block';
-                    }
-                    const expandIcon = node.querySelector('.expand-icon');
-                    if (expandIcon) {
-                        expandIcon.innerHTML = '▼';
-                    }
-                });
-                
-                // Restore selected key
-                if (selectedKey) {
-                    selectedKey.classList.add('selected');
-                }
-            }
-        });
+        this._initWindowEvents();
+        this._initButtonEvents();
+        this._initMenuEvents();
+        this._initTreeEvents();
+    }
+
+    _initWindowEvents() {
+        window.addEventListener('resize', this._handleWindowResize.bind(this));
+    }
+
+    _initButtonEvents() {
+        const elements = this.elements;
         
-        this.elements.addServerBtn.addEventListener('click', () => {
+        // Server and connection buttons
+        elements.addServerBtn.addEventListener('click', () => {
             this.resetConnectionForm();
             this.modal.show();
         });
+        elements.connectBtn.addEventListener('click', () => this.handleConnection());
 
-        this.elements.connectBtn.addEventListener('click', () => this.handleConnection());
-        this.elements.addKeyBtn.addEventListener('click', () => this.showAddKeyModal());
-        this.elements.deleteKeyBtn.addEventListener('click', () => this.deleteSelectedKey());
-        
-        // 為儲存按鈕添加事件監聽器
-        console.log('Setting up save buttons listeners');
-        
-        // 新增鍵值的儲存按鈕
-        this.elements.saveNewKeyBtn.addEventListener('click', async (e) => {
+        // Key management buttons
+        elements.addKeyBtn.addEventListener('click', () => this.showAddKeyModal());
+        elements.deleteKeyBtn.addEventListener('click', () => this.deleteSelectedKey());
+        elements.saveNewKeyBtn.addEventListener('click', e => {
             e.preventDefault();
-            console.log('Save new key button clicked');
-            await this.saveNewKey();
+            this.saveNewKey();
         });
-
-        // 現有鍵值的儲存按鈕
-        this.elements.saveExistingKeyBtn.addEventListener('click', async (e) => {
+        elements.saveExistingKeyBtn.addEventListener('click', e => {
             e.preventDefault();
-            console.log('Save existing key button clicked');
-            await this.saveExistingKey();
+            this.saveExistingKey();
         });
+    }
 
-        this.elements.addKeyMenuItem.addEventListener('click', () => this.showAddKeyModal());
-        this.elements.refreshMenuItem.addEventListener('click', () => this.refreshKeys());
-        this.elements.disconnectMenuItem.addEventListener('click', () => this.disconnect());
-        this.elements.removeServerMenuItem.addEventListener('click', () => this.removeServer());
+    _initMenuEvents() {
+        const elements = this.elements;
+        
+        // Context menu items
+        elements.addKeyMenuItem.addEventListener('click', () => this.showAddKeyModal());
+        elements.refreshMenuItem.addEventListener('click', () => this.refreshKeys());
+        elements.disconnectMenuItem.addEventListener('click', () => this.disconnect());
+        elements.removeServerMenuItem.addEventListener('click', () => this.removeServer());
 
+        // Global context menu handling
         document.addEventListener('click', () => this.hideContextMenu());
-        this.elements.redisTree.addEventListener('contextmenu', (e) => this.showContextMenu(e));
+        elements.redisTree.addEventListener('contextmenu', e => this.showContextMenu(e));
+    }
 
-        // Redis tree click event
-        this.elements.redisTree.addEventListener('click', (event) => {
-            // Handle server node click
-            const serverHeader = event.target.closest('.server-header');
-            if (serverHeader) {
-                const serverNode = serverHeader.closest('.server-node');
-                if (serverNode) {
-                    // Hide key content and show key statistics
-                    this.resetKeyContent();
-                    const connectionId = serverNode.getAttribute('data-connection-id');
-                    if (connectionId) {
-                        this.updateKeyStatistics(connectionId);
-                    }
-                }
-                return;
-            }
-
-            // Handle key node click
-            const keyNode = event.target.closest('.key-node');
-            if (keyNode) {
-                // Hide key statistics and show key content
-                this.elements.keyStatistics.style.display = 'none';
-                const keyName = keyNode.querySelector('.key-name').textContent;
-                const connectionId = keyNode.closest('.server-node').getAttribute('data-connection-id');
-                if (keyName && connectionId) {
-                    this.handleKeySelect(keyName, connectionId);
-                }
+    _initTreeEvents() {
+        this.elements.redisTree.addEventListener('click', e => {
+            if (e.target.closest('.server-header')) {
+                this._handleServerClick(e);
+            } else if (e.target.closest('.key-node')) {
+                this._handleKeyClick(e);
             }
         });
+    }
+
+    _handleWindowResize() {
+        if (!this.elements.redisTree) return;
+
+        const treeContainer = this.elements.redisTree;
+        
+        // Get current states
+        const expandedNodes = Array.from(treeContainer.querySelectorAll('.server-node'))
+            .filter(node => node.querySelector('.keys-container')?.style.display !== 'none');
+        const selectedKey = treeContainer.querySelector('.key-node.selected');
+
+        // Restore states
+        expandedNodes.forEach(node => {
+            const keysContainer = node.querySelector('.keys-container');
+            const expandIcon = node.querySelector('.expand-icon');
+            if (keysContainer) keysContainer.style.display = 'block';
+            if (expandIcon) expandIcon.innerHTML = '▼';
+        });
+
+        if (selectedKey) selectedKey.classList.add('selected');
+    }
+
+    _handleServerClick(event) {
+        const serverNode = event.target.closest('.server-node');
+        if (!serverNode) return;
+
+        this.resetKeyContent();
+        const connectionId = serverNode.getAttribute('data-connection-id');
+        if (connectionId) this.updateKeyStatistics(connectionId);
+    }
+
+    _handleKeyClick(event) {
+        const keyNode = event.target.closest('.key-node');
+        if (!keyNode) return;
+
+        this.elements.keyStatistics.style.display = 'none';
+        const keyName = keyNode.querySelector('.key-name')?.textContent;
+        const connectionId = keyNode.closest('.server-node')?.getAttribute('data-connection-id');
+        
+        if (keyName && connectionId) {
+            this.handleKeySelect(keyName, connectionId);
+        }
     }
 
     async handleConnectionStatus(connectionId, { status, error, delay }) {
@@ -519,78 +526,214 @@ class RedisUIHandler {
     }
 
     _formatValue(type, value) {
-        try {
-            switch (type.toLowerCase()) {
-                case 'string':
+        if (!value) return '';
+        
+        switch (type.toLowerCase()) {
+            case 'string':
+                return value;
+            case 'list':
+            case 'set':
+            case 'zset':
+                return Array.isArray(value) ? value.join('\n') : value;
+            case 'hash':
+                return Object.entries(value)
+                    .map(([key, val]) => `${key}: ${val}`)
+                    .join('\n');
+            case 'json':
+            case 'rejson-rl':
+                try {
+                    return typeof value === 'string' 
+                        ? JSON.stringify(JSON.parse(value), null, 2)
+                        : JSON.stringify(value, null, 2);
+                } catch (e) {
+                    console.error('Error formatting JSON:', e);
                     return value;
-                case 'list':
-                case 'set':
-                case 'zset':
-                    return Array.isArray(value) ? value.join('\n') : value;
-                case 'hash':
-                    if (typeof value === 'object' && value !== null) {
-                        return Object.entries(value)
-                            .map(([k, v]) => `${k}=${v}`)
-                            .join('\n');
+                }
+            case 'stream':
+                try {
+                    // Format stream entries for text display
+                    if (Array.isArray(value)) {
+                        return value.map(entry => {
+                            const timestamp = new Date(parseInt(entry.id.split('-')[0])).toLocaleString();
+                            const fields = [];
+                            for (let i = 0; i < entry.fields.length; i += 2) {
+                                fields.push(`${entry.fields[i]}: ${entry.fields[i + 1]}`);
+                            }
+                            return `ID: ${entry.id}\nTimestamp: ${timestamp}\nFields:\n  ${fields.join('\n  ')}`;
+                        }).join('\n\n');
                     }
+                    return JSON.stringify(value, null, 2);
+                } catch (e) {
+                    console.error('Error formatting stream:', e);
                     return value;
-                case 'json':
-                case 'rejson-rl':
-                    return typeof value === 'object' 
-                        ? JSON.stringify(value, null, 2) 
-                        : value;
-                default:
-                    return value;
-            }
-        } catch (error) {
-            console.error('Error formatting value:', error);
-            return value;
+                }
+            default:
+                return typeof value === 'object' ? JSON.stringify(value, null, 2) : value;
         }
     }
 
-    displayKeyContent(info) {
-        const { key, type, value } = info;
-        console.log('Displaying key content:', info);
-        
-        try {
-            // 隱藏提示訊息
-            const placeholder = document.getElementById('keyContentPlaceholder');
-            const form = document.getElementById('keyContentForm');
-            if (placeholder && form) {
-                placeholder.style.display = 'none';
-                form.style.display = 'block';
-            }
-
-            // Normalize type for JSON
-            const normalizedType = type.toLowerCase() === 'rejson-rl' ? 'json' : type;
-
-            // 更新類型選擇器
-            this.elements.keyType.value = normalizedType;
-            
-            // 更新鍵值名稱
-            this.elements.keyName.value = key;
-            
-            // 根據類型設置特殊顯示模式
-            if (normalizedType.toLowerCase() === 'json') {
-                this.elements.keyValue.style.fontFamily = 'monospace';
-                this.elements.keyValue.style.whiteSpace = 'pre';
-            } else {
-                this.elements.keyValue.style.fontFamily = '';
-                this.elements.keyValue.style.whiteSpace = '';
-            }
-            
-            // 更新值內容
-            this.elements.keyValue.value = this._formatValue(normalizedType, value);
-            
-            // 更新按鈕狀態
-            this.elements.deleteKeyBtn.disabled = false;
-            this.elements.saveExistingKeyBtn.disabled = false;
-            
-            console.log('Key content displayed successfully');
-        } catch (error) {
-            console.error('Error displaying key content:', error);
-            this.uiStateManager.showNotification('顯示鍵值內容時發生錯誤', 'error');
+    async displayKeyContent(info) {
+        if (!info) {
+            this.resetKeyContent();
+            return;
         }
+
+        const { key, type, value } = info;
+        
+        // 隱藏 placeholder，顯示表單
+        this.elements.keyContentPlaceholder.style.display = 'none';
+        this.elements.keyContentForm.style.display = 'block';
+        
+        // 填入基本資料
+        this.elements.keyName.value = key;
+        this.elements.keyType.value = type;
+
+        // 根據不同類型處理值的顯示
+        const valueLabel = this.elements.keyValue.parentElement;
+        
+        if (type === 'stream') {
+            this._displayStreamContent(value, valueLabel);
+        } else {
+            this._displayNormalContent(type, value, valueLabel);
+        }
+
+        // 更新按鈕狀態
+        this.elements.saveExistingKeyBtn.disabled = false;
+        this.elements.deleteKeyBtn.disabled = false;
+    }
+
+    _displayStreamContent(value, valueLabel) {
+        // 顯示stream內容區域，隱藏一般值輸入區和label
+        this.elements.streamContent.style.display = 'block';
+        this.elements.keyValue.style.display = 'none';
+        valueLabel.style.display = 'none';
+        
+        // 清空現有entries
+        this.elements.streamEntries.innerHTML = '';
+        
+        if (!Array.isArray(value) || value.length === 0) {
+            this._displayEmptyStreamMessage();
+            return;
+        }
+
+        const allFields = this._collectStreamFields(value);
+        this._createStreamTableHeader(allFields);
+        this._createStreamTableRows(value, allFields);
+    }
+
+    _displayNormalContent(type, value, valueLabel) {
+        if (this.elements.streamContent) {
+            this.elements.streamContent.style.display = 'none';
+        }
+        this.elements.keyValue.style.display = 'block';
+        valueLabel.style.display = 'block';
+        this.elements.keyValue.value = this._formatValue(type, value);
+    }
+
+    _collectStreamFields(entries) {
+        const allFields = new Set();
+        entries.forEach(entry => {
+            if (Array.isArray(entry.fields)) {
+                for (let i = 0; i < entry.fields.length; i += 2) {
+                    allFields.add(entry.fields[i]);
+                }
+            } else if (typeof entry.fields === 'object') {
+                Object.keys(entry.fields).forEach(field => allFields.add(field));
+            }
+        });
+        return Array.from(allFields).sort();
+    }
+
+    _createStreamTableHeader(fields) {
+        const thead = this.elements.streamContent.querySelector('thead tr');
+        thead.innerHTML = '';
+        
+        // 添加固定欄位
+        thead.appendChild(this._createTh('ID'));
+        thead.appendChild(this._createTh('Timestamp'));
+        
+        // 添加動態欄位
+        fields.forEach(field => thead.appendChild(this._createTh(field)));
+    }
+
+    _createStreamTableRows(entries, fields) {
+        entries.forEach(entry => {
+            const row = document.createElement('tr');
+            
+            // 添加ID和時間戳
+            row.appendChild(this._createTd(entry.id));
+            row.appendChild(this._createTd(this._formatTimestamp(entry.id)));
+            
+            // 添加欄位值
+            const fieldsMap = this._createFieldsMap(entry.fields);
+            fields.forEach(field => {
+                row.appendChild(this._createTd(fieldsMap[field] || ''));
+            });
+            
+            this.elements.streamEntries.appendChild(row);
+        });
+    }
+
+    _createFieldsMap(fields) {
+        if (Array.isArray(fields)) {
+            const map = {};
+            for (let i = 0; i < fields.length; i += 2) {
+                map[fields[i]] = fields[i + 1];
+            }
+            return map;
+        }
+        return fields || {};
+    }
+
+    _formatTimestamp(id) {
+        const timestamp = id.split('-')[0];
+        return new Date(parseInt(timestamp)).toLocaleString();
+    }
+
+    _displayEmptyStreamMessage() {
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = 3;
+        emptyCell.className = 'text-center';
+        emptyCell.textContent = '沒有數據';
+        emptyRow.appendChild(emptyCell);
+        this.elements.streamEntries.appendChild(emptyRow);
+    }
+
+    _createTd(text) {
+        const td = document.createElement('td');
+        td.textContent = text;
+        return td;
+    }
+
+    _createTh(text) {
+        const th = document.createElement('th');
+        th.textContent = text;
+        return th;
+    }
+
+    resetKeyContent() {
+        // 顯示提示訊息，隱藏表單
+        this.elements.keyContentPlaceholder.style.display = 'block';
+        this.elements.keyContentForm.style.display = 'none';
+        
+        // 重置表單內容
+        this.elements.keyName.value = '';
+        this.elements.keyType.value = '';
+        this.elements.keyValue.value = '';
+        
+        // 隱藏 stream 內容
+        if (this.elements.streamContent) {
+            this.elements.streamContent.style.display = 'none';
+            this.elements.streamEntries.innerHTML = '';
+        }
+        
+        // 重置按鈕狀態
+        this.elements.saveExistingKeyBtn.disabled = true;
+        this.elements.deleteKeyBtn.disabled = true;
+        
+        // 隱藏 key statistics
+        this.elements.keyStatistics.style.display = 'none';
     }
 
     _setupTreeNodeEvents(serverNode, expandIcon) {
@@ -818,72 +961,118 @@ class RedisUIHandler {
     }
 
     async deleteSelectedKey() {
-        console.log('Deleting selected key...');
         const selectedNode = document.querySelector('.key-node.selected');
-        if (!selectedNode) {
-            console.warn('No key selected');
-            return;
-        }
+        if (!selectedNode) return;
 
-        const keyName = selectedNode.querySelector('.key-name').textContent;
-        console.log('Selected key:', keyName);
+        const keyName = selectedNode.querySelector('.key-name')?.textContent;
+        if (!keyName) return;
+
+        const deleteModal = this._setupDeleteModal(keyName);
+        if (!deleteModal) return;
+
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        this._setupDeleteConfirmation(confirmBtn, keyName, deleteModal);
         
-        // 顯示刪除確認對話框
+        deleteModal.show();
+    }
+
+    _setupDeleteModal(keyName) {
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
         const deleteKeyNameElement = document.getElementById('deleteKeyName');
         
         if (!deleteKeyNameElement) {
-            console.error('Delete key name element not found');
             this.uiStateManager.showNotification('無法顯示刪除確認對話框');
-            return;
+            return null;
         }
 
-        // 設置要刪除的鍵名
         deleteKeyNameElement.textContent = keyName;
-        
-        // 移除舊的事件監聽器（如果存在）
-        const confirmBtn = document.getElementById('confirmDeleteBtn');
-        const oldHandleDelete = confirmBtn.handleDelete;
-        if (oldHandleDelete) {
-            confirmBtn.removeEventListener('click', oldHandleDelete);
+        return deleteModal;
+    }
+
+    _setupDeleteConfirmation(confirmBtn, keyName, modal) {
+        // Clean up old event listener
+        if (confirmBtn.handleDelete) {
+            confirmBtn.removeEventListener('click', confirmBtn.handleDelete);
         }
-        
-        // 處理刪除確認
+
         const handleDelete = async () => {
-            console.log('Confirming delete for key:', keyName);
             try {
                 const currentConnection = this.connectionManager.getCurrentConnection();
-                if (!currentConnection || !currentConnection.client) {
+                if (!currentConnection?.client) {
                     throw new Error('沒有可用的連線');
                 }
 
                 const result = await this.redisOperations.deleteKey(currentConnection.client, keyName);
-                console.log('Delete result:', result);
                 
                 if (result.success) {
                     await this.refreshKeys();
                     this.resetKeyContent();
                     this.uiStateManager.showNotification('鍵值已刪除', 'success');
                 } else {
-                    this.uiStateManager.showNotification('刪除失敗: ' + result.error, 'error');
+                    throw new Error(result.error);
                 }
             } catch (error) {
-                console.error('Error deleting key:', error);
                 this.uiStateManager.showNotification('刪除失敗: ' + error.message, 'error');
             } finally {
-                deleteModal.hide();
-                // 移除事件監聽器
+                modal.hide();
                 confirmBtn.removeEventListener('click', handleDelete);
                 delete confirmBtn.handleDelete;
             }
         };
 
-        // 儲存事件處理函數的引用以便之後移除
         confirmBtn.handleDelete = handleDelete;
         confirmBtn.addEventListener('click', handleDelete);
+    }
+
+    async removeServer() {
+        if (!this.selectedConnectionId) {
+            console.error('No server selected');
+            return;
+        }
+
+        this._showServerDeleteConfirmDialog();
+    }
+
+    _showServerDeleteConfirmDialog() {
+        const deleteModal = new bootstrap.Modal(document.getElementById('serverDeleteConfirmModal'));
+        const confirmDeleteBtn = document.getElementById('confirmServerDeleteBtn');
         
-        // 顯示確認對話框
+        confirmDeleteBtn.addEventListener('click', () => this._handleServerDeletion(deleteModal));
         deleteModal.show();
+    }
+
+    async _handleServerDeletion(deleteModal) {
+        try {
+            deleteModal.hide();
+            const result = await this.redisOperations.removeServer(this.selectedConnectionId);
+            
+            if (result.success) {
+                this._handleSuccessfulDeletion();
+            } else {
+                this.uiStateManager.showNotification('移除伺服器失敗: ' + result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error removing server:', error);
+            this.uiStateManager.showNotification('移除伺服器時發生錯誤: ' + error.message, 'error');
+        }
+    }
+
+    _handleSuccessfulDeletion() {
+        this.updateTree();
+        this.uiStateManager.showNotification('伺服器已移除', 'success');
+        this.uiStateManager.showNormalState();
+        this.selectedConnectionId = null;
+        this._resetKeyContentArea();
+    }
+
+    _resetKeyContentArea() {
+        const placeholder = document.getElementById('keyContentPlaceholder');
+        const form = document.getElementById('keyContentForm');
+        
+        if (placeholder && form) {
+            placeholder.style.display = 'block';
+            form.style.display = 'none';
+        }
     }
 
     async updateKeyStatistics(connectionId) {
@@ -980,145 +1169,96 @@ class RedisUIHandler {
         }
     }
 
-    async removeServer() {
-        const connectionId = this.selectedConnectionId;
-        if (!connectionId) {
-            console.error('No server selected');
-            return;
-        }
-
-        // 顯示確認對話框
-        const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-
-        // 設置確認按鈕的點擊事件
-        const handleConfirm = async () => {
-            try {
-                deleteModal.hide();
-                confirmDeleteBtn.removeEventListener('click', handleConfirm);
-
-                const result = await this.redisOperations.removeServer(connectionId);
-                if (result.success) {
-                    // 更新樹狀圖
-                    this.updateTree();
-                    this.uiStateManager.showNotification('伺服器已移除', 'success');
-                    
-                    // 重置 UI 狀態
-                    this.uiStateManager.showNormalState();
-                    this.selectedConnectionId = null;
-                    
-                    // 清空鍵值內容區域
-                    const placeholder = document.getElementById('keyContentPlaceholder');
-                    const form = document.getElementById('keyContentForm');
-                    if (placeholder && form) {
-                        placeholder.style.display = 'block';
-                        form.style.display = 'none';
-                    }
-                } else {
-                    this.uiStateManager.showNotification('移除伺服器失敗: ' + result.error, 'error');
-                }
-            } catch (error) {
-                console.error('Error removing server:', error);
-                this.uiStateManager.showNotification('移除伺服器時發生錯誤: ' + error.message, 'error');
-            }
-        };
-
-        confirmDeleteBtn.addEventListener('click', handleConfirm);
-        deleteModal.show();
+    _setupContextMenu() {
+        this._createReconnectMenuItem();
+        this._setupContextMenuEventListeners();
     }
 
-    _setupContextMenu() {
-        // 新增重新連線選單項目
+    _createReconnectMenuItem() {
         const reconnectMenuItem = document.createElement('a');
         reconnectMenuItem.className = 'dropdown-item';
         reconnectMenuItem.href = '#';
         reconnectMenuItem.innerHTML = '<i class="fas fa-plug-circle-check me-2"></i>重新連線';
         reconnectMenuItem.style.display = 'none';
         
-        // 將重新連線選單項加入到中斷連線選單項之前
-        this.elements.disconnectMenuItem.parentNode.insertBefore(reconnectMenuItem, this.elements.disconnectMenuItem);
-        
-        // 獲取分隔線元素
-        const divider = document.querySelector('#serverContextMenu .dropdown-divider');
-        
-        document.addEventListener('contextmenu', (e) => {
-            // 找到最近的伺服器節點
-            const serverNode = e.target.closest('.server-node');
-            if (!serverNode) return;
-            
-            e.preventDefault();
-            
-            const connectionId = serverNode.getAttribute('data-connection-id');
-            const connection = this.redisOperations.connections.get(connectionId);
-            
-            if (connection) {
-                // 獲取狀態指示器的當前狀態
-                const statusIndicator = serverNode.querySelector('.connection-status');
-                const hasDisconnectedClass = statusIndicator && 
-                    (statusIndicator.classList.contains('disconnected') || 
-                     statusIndicator.classList.contains('error'));
-                const hasConnectedClass = statusIndicator && 
-                    statusIndicator.classList.contains('connected');
-
-                console.log('Status indicator classes:', statusIndicator ? statusIndicator.className : 'not found');
-                
-                // 根據連線狀態顯示/隱藏選單項目
-                if (hasDisconnectedClass) {
-                    // 斷開狀態：只顯示重新連線選項
-                    reconnectMenuItem.style.display = 'block';
-                    reconnectMenuItem.onclick = () => this.handleReconnect(connectionId);
-                    
-                    this.elements.addKeyMenuItem.style.display = 'none';
-                    this.elements.refreshMenuItem.style.display = 'none';
-                    this.elements.disconnectMenuItem.style.display = 'none';
-                    divider.style.display = 'none';  // 隱藏分隔線
-                } else if (hasConnectedClass) {
-                    // 連線狀態：顯示一般操作選項，隱藏重新連線
-                    reconnectMenuItem.style.display = 'none';
-                    
-                    this.elements.addKeyMenuItem.style.display = 'block';
-                    this.elements.refreshMenuItem.style.display = 'block';
-                    this.elements.disconnectMenuItem.style.display = 'block';
-                    divider.style.display = 'block';  // 顯示分隔線
-                    
-                    // 設定一般操作選項的事件處理
-                    this.elements.disconnectMenuItem.onclick = () => this.handleDisconnect(connectionId);
-                    this.elements.refreshMenuItem.onclick = () => this.updateTree();
-                    // TODO: 實作新增鍵值的功能
-                    this.elements.addKeyMenuItem.onclick = () => console.log('Add key clicked');
-                }
-            }
-
-            // 顯示選單
-            this.elements.serverContextMenu.style.display = 'block';
-            this.elements.serverContextMenu.style.left = e.pageX + 'px';
-            this.elements.serverContextMenu.style.top = e.pageY + 'px';
-        });
-
-        // 點擊其他地方時隱藏選單
-        document.addEventListener('click', () => {
-            this.elements.serverContextMenu.style.display = 'none';
-        });
+        this.elements.disconnectMenuItem.parentNode.insertBefore(
+            reconnectMenuItem, 
+            this.elements.disconnectMenuItem
+        );
+        this.elements.reconnectMenuItem = reconnectMenuItem;
     }
 
-    resetKeyContent() {
-        console.log('Resetting key content');
-        // 顯示提示訊息
-        const placeholder = document.getElementById('keyContentPlaceholder');
-        const form = document.getElementById('keyContentForm');
-        if (placeholder && form) {
-            placeholder.style.display = 'block';
-            form.style.display = 'none';
+    _setupContextMenuEventListeners() {
+        document.addEventListener('contextmenu', (e) => this._handleContextMenu(e));
+        document.addEventListener('click', () => this._hideContextMenu());
+    }
+
+    _handleContextMenu(e) {
+        const serverNode = e.target.closest('.server-node');
+        if (!serverNode) return;
+        
+        e.preventDefault();
+        
+        const connectionId = serverNode.getAttribute('data-connection-id');
+        const connection = this.redisOperations.connections.get(connectionId);
+        
+        if (connection) {
+            const statusIndicator = serverNode.querySelector('.connection-status');
+            this._updateMenuItemsVisibility(statusIndicator, connectionId);
         }
 
-        // 重置表單
-        this.elements.keyName.value = '';
-        this.elements.keyType.value = 'string';
-        this.elements.keyValue.value = '';
+        this._showContextMenu(e.pageX, e.pageY);
+    }
 
-        // 禁用按鈕
-        this.elements.deleteKeyBtn.disabled = true;
-        this.elements.saveExistingKeyBtn.disabled = true;
+    _updateMenuItemsVisibility(statusIndicator, connectionId) {
+        const hasDisconnectedClass = statusIndicator && 
+            (statusIndicator.classList.contains('disconnected') || 
+             statusIndicator.classList.contains('error'));
+        const hasConnectedClass = statusIndicator && 
+            statusIndicator.classList.contains('connected');
+
+        console.log('Status indicator classes:', statusIndicator ? statusIndicator.className : 'not found');
+        
+        const divider = document.querySelector('#serverContextMenu .dropdown-divider');
+        
+        if (hasDisconnectedClass) {
+            this._showDisconnectedMenuItems(connectionId);
+            divider.style.display = 'none';
+        } else if (hasConnectedClass) {
+            this._showConnectedMenuItems(connectionId);
+            divider.style.display = 'block';
+        }
+    }
+
+    _showDisconnectedMenuItems(connectionId) {
+        this.elements.reconnectMenuItem.style.display = 'block';
+        this.elements.reconnectMenuItem.onclick = () => this.handleReconnect(connectionId);
+        
+        this.elements.addKeyMenuItem.style.display = 'none';
+        this.elements.refreshMenuItem.style.display = 'none';
+        this.elements.disconnectMenuItem.style.display = 'none';
+    }
+
+    _showConnectedMenuItems(connectionId) {
+        this.elements.reconnectMenuItem.style.display = 'none';
+        
+        this.elements.addKeyMenuItem.style.display = 'block';
+        this.elements.refreshMenuItem.style.display = 'block';
+        this.elements.disconnectMenuItem.style.display = 'block';
+        
+        this.elements.disconnectMenuItem.onclick = () => this.handleDisconnect(connectionId);
+        this.elements.refreshMenuItem.onclick = () => this.updateTree();
+        this.elements.addKeyMenuItem.onclick = () => console.log('Add key clicked');
+    }
+
+    _showContextMenu(x, y) {
+        this.elements.serverContextMenu.style.display = 'block';
+        this.elements.serverContextMenu.style.left = x + 'px';
+        this.elements.serverContextMenu.style.top = y + 'px';
+    }
+
+    _hideContextMenu() {
+        this.elements.serverContextMenu.style.display = 'none';
     }
 }
 

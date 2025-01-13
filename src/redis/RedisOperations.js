@@ -247,6 +247,19 @@ class RedisOperations extends EventEmitter {
                 case 'zset':
                     value = await client.zrange(key, 0, -1, 'WITHSCORES');
                     break;
+                case 'stream':
+                    try {
+                        // 讀取stream的所有條目，從最舊的開始，限制100條
+                        const result = await client.xrange(key, '-', '+', 'COUNT', 100);
+                        value = result.map(entry => ({
+                            id: entry[0],
+                            fields: entry[1]
+                        }));
+                    } catch (streamError) {
+                        console.error('Error getting stream value:', streamError);
+                        value = [];
+                    }
+                    break;
                 case 'rejson-rl':
                     try {
                         const jsonStr = await client.call('JSON.GET', key, '$');

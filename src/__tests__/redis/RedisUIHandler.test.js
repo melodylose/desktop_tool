@@ -97,6 +97,10 @@ describe('RedisUIHandler', () => {
         <div id="removeServerMenuItem"></div>
       </div>
       <div id="keyContent"></div>
+      <form id="keyContentForm"></form>
+      <div id="keyContentPlaceholder"></div>
+      <div id="streamContent"></div>
+      <div id="streamEntries"></div>
       <input id="serverName" />
       <input id="redisServer" />
       <input id="redisPort" />
