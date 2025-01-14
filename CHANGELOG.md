@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2025-01-14
+
+### Changed
+- 改進 Redis UI 功能
+  - 優化 UIStateManager 通知功能
+  - 更新 Redis 操作介面
+    - 改進 Stream 資料顯示格式
+      - 新增 Stream 條目 ID 顯示
+      - 優化 Stream 欄位資料格式化
+      - 限制單次顯示 100 條記錄以提升效能
+    - 強化資料類型處理
+      - 完善 Stream 類型資料讀取邏輯
+      - 優化錯誤處理機制
+      - 改進資料格式驗證
+
 ## [1.2.3] - 2025-01-10
 
 ### Added

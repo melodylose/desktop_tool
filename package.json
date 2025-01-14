@@ -1,6 +1,6 @@
 {
   "name": "electron-toolkit",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "An Electron-based toolkit application for various utilities",
   "main": "main.js",
   "scripts": {
