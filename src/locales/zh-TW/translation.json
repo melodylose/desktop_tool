@@ -1,0 +1,241 @@
+{
+  "common": {
+    "save": "儲存",
+    "cancel": "取消",
+    "close": "關閉",
+    "settings": "設定",
+    "options": "選項",
+    "connect": "連線",
+    "disconnect": "中斷連線",
+    "start": "開始使用",
+    "stop": "停止",
+    "clear": "清除",
+    "status": "狀態",
+    "connected": "已連線",
+    "disconnected": "已中斷連線",
+    "error": "錯誤",
+    "success": "成功"
+  },
+  "home": {
+    "title": "首頁",
+    "welcome": "歡迎使用通訊工具",
+    "description": "這是一個整合了多種通訊協議的工具，包括：",
+    "quickStart": "快速開始",
+    "recentConnections": "最近連線",
+    "statistics": "統計資訊"
+  },
+  "menu": {
+    "file": "檔案",
+    "edit": "編輯",
+    "view": "檢視",
+    "help": "說明"
+  },
+  "settings": {
+    "title": "設定",
+    "general": "一般設定",
+    "language": "語言",
+    "theme": "主題",
+    "light": "淺色",
+    "dark": "深色",
+    "autoUpdate": "啟動時自動檢查更新",
+    "currentVersion": "目前版本",
+    "checkUpdate": "立即檢查更新",
+    "saveSettings": "儲存設定",
+    "checkingUpdate": "正在檢查更新...",
+    "updateAvailable": "發現新版本 {version}",
+    "noUpdateAvailable": "已是最新版本",
+    "updateCheckError": "檢查更新時發生錯誤",
+    "downloadingUpdate": "正在下載更新 ({progress}%)",
+    "updateReady": "更新已準備完成，重新啟動應用程式以套用更新"
+  },
+  "modbus": {
+    "title": "Modbus 通訊",
+    "settings": "Modbus 通訊設定",
+    "description": "支援 Modbus TCP/RTU 協議，可以輕鬆讀取和寫入 Modbus 裝置的資料。",
+    "connection": "連線設定",
+    "host": "主機位址",
+    "port": "通訊埠",
+    "deviceId": "裝置 ID",
+    "readInterval": "讀取間隔 (毫秒)",
+    "registers": "暫存器",
+    "address": "位址",
+    "value": "數值",
+    "type": "類型",
+    "addRegister": "新增暫存器",
+    "removeRegister": "移除",
+    "startMonitoring": "開始監控",
+    "stopMonitoring": "停止監控",
+    "mode": {
+      "label": "選擇模式",
+      "readSingle": "單筆讀取",
+      "readContinuous": "連續讀取",
+      "writeSingle": "單筆寫入",
+      "writeContinuous": "連續寫入"
+    },
+    "method": {
+      "label": "選擇使用方法",
+      "coil": "Coil (0x)",
+      "discrete": "Discrete Input (1x)",
+      "holding": "Holding Register (4x)",
+      "input": "Input Register (3x)"
+    },
+    "startAddress": "起始地址",
+    "dataLength": "資料長度",
+    "writeValue": "寫入數值",
+    "writeValuePlaceholder": "數值 (多個值用逗號分隔)",
+    "samplingRate": "取樣頻率",
+    "samplingRatePlaceholder": "頻率 (ms)",
+    "execute": "執行",
+    "ipPlaceholder": "IP 地址 (例: 192.168.1.100)",
+    "portPlaceholder": "Port (預設 502)",
+    "table": {
+      "address": "地址",
+      "value": "數值",
+      "timestamp": "時間戳記",
+      "status": "狀態",
+      "method": "方法"
+    }
+  },
+  "mqtt": {
+    "title": "MQTT 功能",
+    "description": "連接到 MQTT Broker，訂閱和發布訊息。支援多主題訂閱和 QoS 設定。",
+    "broker": "代理伺服器設定",
+    "host": "主機位址",
+    "port": "通訊埠",
+    "username": "使用者名稱",
+    "password": "密碼",
+    "topic": "主題",
+    "publish": "發布",
+    "subscribe": "訂閱",
+    "message": "訊息",
+    "qos": "服務品質",
+    "brokerPlaceholder": "Broker 位址",
+    "portPlaceholder": "Port",
+    "topicPlaceholder": "Topic",
+    "messagePlaceholder": "訊息",
+    "messageList": "訊息列表"
+  },
+  "ftp": {
+    "title": "FTP 通訊",
+    "description": "輕鬆管理 FTP 伺服器上的檔案，支援檔案上傳、下載、刪除等操作。",
+    "connection": {
+      "title": "連線設定",
+      "anonymous": "匿名登入",
+      "server": "FTP 伺服器位址",
+      "username": "使用者名稱",
+      "password": "密碼",
+      "connect": "連線",
+      "disconnect": "中斷連線",
+      "connecting": "連線中..."
+    },
+    "files": {
+      "download": "下載",
+      "downloadSelected": "下載選取的檔案",
+      "refresh": "重新整理",
+      "refreshList": "重新整理檔案列表",
+      "upload": "上傳",
+      "uploadFiles": "上傳檔案",
+      "table": {
+        "selectAll": "全選",
+        "name": "名稱",
+        "type": "類型",
+        "size": "大小",
+        "modifiedDate": "修改日期"
+      }
+    },
+    "progress": {
+      "downloading": "下載中",
+      "uploading": "上傳中"
+    },
+    "fileTypes": {
+      "file": "檔案",
+      "directory": "資料夾"
+    },
+    "remoteDir": "遠端目錄",
+    "localDir": "本機目錄",
+    "browse": "瀏覽",
+    "fileList": "檔案清單",
+    "transferStatus": "傳輸狀態"
+  },
+  "redis": {
+    "title": "Redis 管理",
+    "description": "連接並管理 Redis 資料庫，支援所有資料類型的操作。提供樹狀瀏覽介面。",
+    "server": {
+      "title": "Redis 伺服器",
+      "add": "新增 Redis 伺服器",
+      "name": "伺服器名稱",
+      "namePlaceholder": "輸入一個識別名稱",
+      "host": "主機位址",
+      "hostPlaceholder": "例如: localhost",
+      "port": "連接埠",
+      "password": "密碼",
+      "passwordOptional": "密碼 (選填)",
+      "database": "資料庫編號",
+      "connecting": "連線中...",
+      "connected": "已連線",
+      "disconnect": "中斷連線",
+      "remove": "移除伺服器",
+      "refresh": "重新整理",
+      "confirmDelete": "確認刪除伺服器",
+      "confirmDeleteMessage": "確定要刪除此伺服器連線嗎？此操作無法復原。"
+    },
+    "key": {
+      "title": "鍵值管理",
+      "add": "新增鍵值",
+      "delete": "刪除",
+      "save": "儲存",
+      "name": "鍵值名稱",
+      "type": "類型",
+      "value": "值",
+      "confirmDelete": "確認刪除鍵值",
+      "confirmDeleteMessage": "確定要刪除鍵值 {keyName} 嗎？此操作無法復原。",
+      "placeholder": "選擇一個鍵值來查看內容",
+      "types": {
+        "string": "String",
+        "list": "List",
+        "hash": "Hash",
+        "set": "Set",
+        "zset": "Sorted Set"
+      },
+      "valueHint": "對於List和Set，請使用JSON陣列格式。對於Hash和Sorted Set，請使用JSON物件格式。"
+    },
+    "statistics": {
+      "title": "Key Statistics",
+      "database": "資料庫",
+      "totalKeys": "總鍵值數",
+      "validKeys": "有效鍵值數",
+      "avgTTL": "平均 TTL (秒)"
+    },
+    "stream": {
+      "id": "ID",
+      "timestamp": "Timestamp",
+      "fields": "Fields"
+    },
+    "connection": "連線設定",
+    "host": "主機位址",
+    "port": "通訊埠",
+    "password": "密碼",
+    "database": "資料庫",
+    "key": "鍵值",
+    "value": "內容",
+    "type": "類型",
+    "ttl": "存活時間",
+    "set": "設定",
+    "get": "取得",
+    "delete": "刪除",
+    "clear": "清除全部",
+    "search": "搜尋",
+    "refresh": "重新整理",
+    "keyList": "鍵值清單",
+    "monitoring": "監控中",
+    "startMonitor": "開始監控",
+    "stopMonitor": "停止監控"
+  },
+  "sidebar": {
+    "modbus": "Modbus 通訊",
+    "mqtt": "MQTT 功能",
+    "ftp": "FTP 通訊",
+    "redis": "Redis 管理",
+    "settings": "設定"
+  }
+}

@@ -8,10 +8,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "build": "electron-builder build --win",
+    "build": "electron-builder build",
     "build:win": "electron-builder build --win",
     "build:mac": "electron-builder build --mac",
-    "build:linux": "electron-builder build --linux"
+    "build:linux": "electron-builder build --linux",
+    "publish": "node scripts/publish.mjs"
   },
   "build": {
     "appId": "com.nocompany.electrontoolkit",
@@ -19,8 +20,28 @@
     "directories": {
       "output": "dist"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "melodylose",
+      "repo": "desktop_tool"
+    },
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Electron Toolkit"
     }
   },
   "author": "daniel",
@@ -28,6 +49,10 @@
   "dependencies": {
     "basic-ftp": "^5.0.5",
     "bootstrap": "^5.3.3",
+    "electron-log": "^5.2.4",
+    "electron-updater": "^6.3.9",
+    "i18next": "^24.2.1",
+    "i18next-browser-languagedetector": "^8.0.2",
     "ioredis": "^5.4.2",
     "jquery": "^3.7.1",
     "jsmodbus": "^4.0.10",
@@ -36,8 +61,10 @@
     "serialport": "^12.0.0"
   },
   "devDependencies": {
+    "@octokit/rest": "^21.1.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@types/jest": "^29.5.14",
+    "cross-env": "^7.0.3",
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",
     "electron-mock-ipc": "^0.3.12",

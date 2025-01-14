@@ -1,44 +1,44 @@
 <div class="tab-pane fade" id="mqtt-tab" role="tabpanel">
-    <h2>MQTT 功能</h2>
+    <h2 data-i18n="mqtt.title">MQTT 功能</h2>
     <div class="card mb-3">
         <div class="card-body">
             <!-- MQTT 連線設定 -->
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <input type="text" class="form-control" id="mqtt-broker" placeholder="Broker 位址">
+                    <input type="text" class="form-control" id="mqtt-broker" data-i18n-placeholder="mqtt.brokerPlaceholder" placeholder="Broker 位址">
                 </div>
                 <div class="col-md-3">
-                    <input type="number" class="form-control" id="mqtt-port" placeholder="Port">
+                    <input type="number" class="form-control" id="mqtt-port" data-i18n-placeholder="mqtt.portPlaceholder" placeholder="Port">
                 </div>
                 <div class="col-md-3">
-                    <button id="mqtt-connect" class="btn btn-primary w-100">連線</button>
+                    <button id="mqtt-connect" class="btn btn-primary w-100" data-i18n="common.connect">連線</button>
                 </div>
             </div>
 
             <!-- 訂閱設定 -->
             <div class="row mb-3">
                 <div class="col-md-9">
-                    <input type="text" class="form-control" id="mqtt-topic" placeholder="Topic">
+                    <input type="text" class="form-control" id="mqtt-topic" data-i18n-placeholder="mqtt.topicPlaceholder" placeholder="Topic">
                 </div>
                 <div class="col-md-3">
-                    <button id="mqtt-subscribe" class="btn btn-success w-100">訂閱</button>
+                    <button id="mqtt-subscribe" class="btn btn-success w-100" data-i18n="mqtt.subscribe">訂閱</button>
                 </div>
             </div>
 
             <!-- 發布訊息 -->
             <div class="row mb-3">
                 <div class="col-md-9">
-                    <input type="text" class="form-control" id="mqtt-message" placeholder="訊息">
+                    <input type="text" class="form-control" id="mqtt-message" data-i18n-placeholder="mqtt.messagePlaceholder" placeholder="訊息">
                 </div>
                 <div class="col-md-3">
-                    <button id="mqtt-publish" class="btn btn-info w-100">發布</button>
+                    <button id="mqtt-publish" class="btn btn-info w-100" data-i18n="mqtt.publish">發布</button>
                 </div>
             </div>
 
             <!-- 訊息列表 -->
             <div class="row">
                 <div class="col-12">
-                    <h5>訊息列表</h5>
+                    <h5 data-i18n="mqtt.messageList">訊息列表</h5>
                     <div class="border p-2" style="height: 300px; overflow-y: auto;">
                         <ul class="list-unstyled" id="mqtt-messages">
                             <!-- 動態填入訊息 -->

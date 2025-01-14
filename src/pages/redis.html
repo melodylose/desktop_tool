@@ -5,7 +5,7 @@
             <div class="card h-100">
                 <div class="card-body d-flex flex-column p-2">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="card-title mb-0">Redis 伺服器</h5>
+                        <h5 class="card-title mb-0" data-i18n="redis.server.title">Redis 伺服器</h5>
                         <button class="btn btn-sm btn-primary" id="addServerBtn">
                             <i class="fas fa-plus"></i>
                         </button>
@@ -21,26 +21,26 @@
                 <div class="card-body d-flex flex-column">
                     <div class="mb-3 d-flex align-items-center">
                         <button class="btn btn-primary me-2" id="addKeyBtn" disabled>
-                            <i class="fas fa-plus me-2"></i>新增鍵值
+                            <i class="fas fa-plus me-2"></i><span data-i18n="redis.key.add">新增鍵值</span>
                         </button>
                         <button class="btn btn-danger me-2" id="deleteKeyBtn" disabled>
-                            <i class="fas fa-trash me-2"></i>刪除
+                            <i class="fas fa-trash me-2"></i><span data-i18n="redis.key.delete">刪除</span>
                         </button>
                         <button class="btn btn-success me-2" id="saveExistingKeyBtn" disabled>
-                            <i class="fas fa-save me-2"></i>儲存
+                            <i class="fas fa-save me-2"></i><span data-i18n="redis.key.save">儲存</span>
                         </button>
                     </div>
                     <div class="mb-3">
                         <!-- Key Statistics Table -->
                         <div id="keyStatistics" class="mb-3" style="display: none;">
-                            <h6 class="mb-2">Key Statistics</h6>
+                            <h6 class="mb-2" data-i18n="redis.statistics.title">Key Statistics</h6>
                             <table class="table table-sm table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>資料庫</th>
-                                        <th>總鍵值數</th>
-                                        <th>有效鍵值數</th>
-                                        <th>平均 TTL (秒)</th>
+                                        <th data-i18n="redis.statistics.database">資料庫</th>
+                                        <th data-i18n="redis.statistics.totalKeys">總鍵值數</th>
+                                        <th data-i18n="redis.statistics.validKeys">有效鍵值數</th>
+                                        <th data-i18n="redis.statistics.avgTTL">平均 TTL (秒)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="keyStatsBody">
@@ -52,17 +52,17 @@
                         <!-- 初始提示 -->
                         <div id="keyContentPlaceholder" class="text-center text-muted pt-5">
                             <i class="fas fa-database fa-3x mb-3"></i>
-                            <p>選擇一個鍵值來查看內容</p>
+                            <p data-i18n="redis.key.placeholder">選擇一個鍵值來查看內容</p>
                         </div>
                         
                         <!-- 鍵值編輯表單 -->
                         <div id="keyContentForm" class="p-3" style="display: none;">
                             <div class="mb-3">
-                                <label for="keyName" class="form-label">鍵值名稱</label>
+                                <label for="keyName" class="form-label" data-i18n="redis.key.name">鍵值名稱</label>
                                 <input type="text" class="form-control" id="keyName" readonly>
                             </div>
                             <div class="mb-3">
-                                <label for="keyType" class="form-label">類型</label>
+                                <label for="keyType" class="form-label" data-i18n="redis.key.type">類型</label>
                                 <input type="text" class="form-control" id="keyType" readonly>
                             </div>
                             <!-- Stream Data Display -->
@@ -71,9 +71,9 @@
                                     <table class="table table-striped table-bordered">
                                         <thead>
                                             <tr>
-                                                <th>ID</th>
-                                                <th>Timestamp</th>
-                                                <th>Fields</th>
+                                                <th data-i18n="redis.stream.id">ID</th>
+                                                <th data-i18n="redis.stream.timestamp">Timestamp</th>
+                                                <th data-i18n="redis.stream.fields">Fields</th>
                                             </tr>
                                         </thead>
                                         <tbody id="streamEntries">
@@ -82,7 +82,7 @@
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="keyValue" class="form-label">值</label>
+                                <label for="keyValue" class="form-label" data-i18n="redis.key.value">值</label>
                                 <textarea class="form-control font-monospace" id="keyValue" rows="10" style="white-space: pre; tab-size: 2;"></textarea>
                             </div>
                         </div>
@@ -98,43 +98,43 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">新增 Redis 伺服器</h5>
+                <h5 class="modal-title" data-i18n="redis.server.add">新增 Redis 伺服器</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">伺服器名稱</label>
-                    <input type="text" class="form-control" id="serverName" placeholder="輸入一個識別名稱">
+                    <label class="form-label" data-i18n="redis.server.name">伺服器名稱</label>
+                    <input type="text" class="form-control" id="serverName" data-i18n-placeholder="redis.server.namePlaceholder">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">主機位址</label>
-                    <input type="text" class="form-control" id="redisServer" placeholder="例如: localhost">
+                    <label class="form-label" data-i18n="redis.server.host">主機位址</label>
+                    <input type="text" class="form-control" id="redisServer" data-i18n-placeholder="redis.server.hostPlaceholder">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">連接埠</label>
+                    <label class="form-label" data-i18n="redis.server.port">連接埠</label>
                     <input type="number" class="form-control" id="redisPort" value="6379">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">密碼 (選填)</label>
+                    <label class="form-label" data-i18n="redis.server.passwordOptional">密碼 (選填)</label>
                     <input type="password" class="form-control" id="redisPassword">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">資料庫編號</label>
+                    <label class="form-label" data-i18n="redis.server.database">資料庫編號</label>
                     <input type="number" class="form-control" id="redisDb" value="0" min="0">
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
                 <button type="button" class="btn btn-primary" id="connectBtn">
                     <span class="normal-state" style="display: inline-block;">
-                        <i class="fas fa-plug me-2"></i>連線
+                        <i class="fas fa-plug me-2"></i><span data-i18n="common.connect">連線</span>
                     </span>
                     <span class="connecting-state" style="display: none;">
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        連線中...
+                        <span data-i18n="redis.server.connecting">連線中...</span>
                     </span>
                     <span class="connected-state" style="display: none;">
-                        <i class="fas fa-plug-circle-check me-2"></i>已連線
+                        <i class="fas fa-plug-circle-check me-2"></i><span data-i18n="redis.server.connected">已連線</span>
                     </span>
                 </button>
             </div>
@@ -147,35 +147,35 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">新增鍵值</h5>
+                <h5 class="modal-title" data-i18n="redis.key.add">新增鍵值</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label">類型</label>
+                    <label class="form-label" data-i18n="redis.key.type">類型</label>
                     <select class="form-select" id="newKeyType">
-                        <option value="string">String</option>
-                        <option value="list">List</option>
-                        <option value="hash">Hash</option>
-                        <option value="set">Set</option>
-                        <option value="zset">Sorted Set</option>
+                        <option value="string" data-i18n="redis.key.types.string">String</option>
+                        <option value="list" data-i18n="redis.key.types.list">List</option>
+                        <option value="hash" data-i18n="redis.key.types.hash">Hash</option>
+                        <option value="set" data-i18n="redis.key.types.set">Set</option>
+                        <option value="zset" data-i18n="redis.key.types.zset">Sorted Set</option>
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">鍵名</label>
+                    <label class="form-label" data-i18n="redis.key.name">鍵名</label>
                     <input type="text" class="form-control" id="newKeyName">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">值</label>
+                    <label class="form-label" data-i18n="redis.key.value">值</label>
                     <textarea class="form-control" id="newKeyValue" rows="4"></textarea>
-                    <small class="form-text text-muted">
+                    <small class="form-text text-muted" data-i18n="redis.key.valueHint">
                         對於List和Set，請使用JSON陣列格式。對於Hash和Sorted Set，請使用JSON物件格式。
                     </small>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" id="saveNewKeyBtn">儲存</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
+                <button type="button" class="btn btn-primary" id="saveNewKeyBtn" data-i18n="common.save">儲存</button>
             </div>
         </div>
     </div>
@@ -184,17 +184,17 @@
 <!-- Server Context Menu -->
 <div class="dropdown-menu" id="serverContextMenu">
     <a class="dropdown-item" href="#" id="addKeyMenuItem">
-        <i class="fas fa-plus me-2"></i>新增鍵值
+        <i class="fas fa-plus me-2"></i><span data-i18n="redis.key.add">新增鍵值</span>
     </a>
     <a class="dropdown-item" href="#" id="refreshMenuItem">
-        <i class="fas fa-sync-alt me-2"></i>重新整理
+        <i class="fas fa-sync-alt me-2"></i><span data-i18n="redis.server.refresh">重新整理</span>
     </a>
     <a class="dropdown-item" href="#" id="disconnectMenuItem">
-        <i class="fas fa-plug me-2"></i>中斷連線
+        <i class="fas fa-plug me-2"></i><span data-i18n="redis.server.disconnect">中斷連線</span>
     </a>
     <div class="dropdown-divider"></div>
     <a class="dropdown-item text-danger" href="#" id="removeServerMenuItem">
-        <i class="fas fa-trash me-2"></i>移除伺服器
+        <i class="fas fa-trash me-2"></i><span data-i18n="redis.server.remove">移除伺服器</span>
     </a>
 </div>
 
@@ -203,15 +203,15 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteConfirmModalLabel">確認刪除鍵值</h5>
+                <h5 class="modal-title" id="deleteConfirmModalLabel" data-i18n="redis.key.confirmDelete">確認刪除鍵值</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                確定要刪除鍵值 <span id="deleteKeyName" class="fw-bold"></span> 嗎？此操作無法復原。
+                <span data-i18n="redis.key.confirmDeleteMessage">確定要刪除鍵值 <span id="deleteKeyName" class="fw-bold"></span> 嗎？此操作無法復原。</span>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">刪除</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" data-i18n="redis.key.delete">刪除</button>
             </div>
         </div>
     </div>
@@ -222,15 +222,15 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="serverDeleteConfirmModalLabel">確認刪除伺服器</h5>
+                <h5 class="modal-title" id="serverDeleteConfirmModalLabel" data-i18n="redis.server.confirmDelete">確認刪除伺服器</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                確定要刪除此伺服器連線嗎？此操作無法復原。
+                <span data-i18n="redis.server.confirmDeleteMessage">確定要刪除此伺服器連線嗎？此操作無法復原。</span>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-danger" id="confirmServerDeleteBtn">刪除</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmServerDeleteBtn" data-i18n="redis.key.delete">刪除</button>
             </div>
         </div>
     </div>

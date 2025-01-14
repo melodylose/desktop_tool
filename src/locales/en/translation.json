@@ -1,0 +1,229 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "settings": "Settings",
+    "options": "Options",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "start": "Get Started",
+    "stop": "Stop",
+    "clear": "Clear",
+    "status": "Status",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "error": "Error",
+    "success": "Success"
+  },
+  "home": {
+    "title": "Home",
+    "welcome": "Welcome to Communication Tool",
+    "description": "This is a tool that integrates multiple communication protocols, including:",
+    "quickStart": "Quick Start",
+    "recentConnections": "Recent Connections",
+    "statistics": "Statistics"
+  },
+  "menu": {
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "help": "Help"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "autoUpdate": "Check for updates on startup",
+    "currentVersion": "Current Version",
+    "checkUpdate": "Check for Updates",
+    "saveSettings": "Save Settings",
+    "checkingUpdate": "Checking for updates...",
+    "updateAvailable": "New version {version} available",
+    "noUpdateAvailable": "You are using the latest version",
+    "updateCheckError": "Error checking for updates",
+    "downloadingUpdate": "Downloading update ({progress}%)",
+    "updateReady": "Update is ready, restart the application to apply"
+  },
+  "modbus": {
+    "title": "Modbus Communication",
+    "settings": "Modbus Communication Settings",
+    "description": "Support Modbus TCP/RTU protocols, easily read and write data from Modbus devices.",
+    "connection": "Connection Settings",
+    "host": "Host",
+    "port": "Port",
+    "deviceId": "Device ID",
+    "readInterval": "Read Interval (ms)",
+    "registers": "Registers",
+    "address": "Address",
+    "value": "Value",
+    "type": "Type",
+    "addRegister": "Add Register",
+    "removeRegister": "Remove",
+    "startMonitoring": "Start Monitoring",
+    "stopMonitoring": "Stop Monitoring",
+    "mode": {
+      "label": "Select Mode",
+      "readSingle": "Single Read",
+      "readContinuous": "Continuous Read",
+      "writeSingle": "Single Write",
+      "writeContinuous": "Continuous Write"
+    },
+    "method": {
+      "label": "Select Method",
+      "coil": "Coil (0x)",
+      "discrete": "Discrete Input (1x)",
+      "holding": "Holding Register (4x)",
+      "input": "Input Register (3x)"
+    },
+    "startAddress": "Start Address",
+    "dataLength": "Data Length",
+    "writeValue": "Write Value",
+    "writeValuePlaceholder": "Value (separate multiple values with commas)",
+    "samplingRate": "Sampling Rate",
+    "samplingRatePlaceholder": "Rate (ms)",
+    "execute": "Execute",
+    "ipPlaceholder": "IP Address (e.g., 192.168.1.100)",
+    "portPlaceholder": "Port (default 502)",
+    "table": {
+      "address": "Address",
+      "value": "Value",
+      "timestamp": "Timestamp",
+      "status": "Status",
+      "method": "Method"
+    }
+  },
+  "mqtt": {
+    "title": "MQTT Functions",
+    "description": "Connect to MQTT Broker, subscribe and publish messages. Support multiple topic subscriptions and QoS settings.",
+    "broker": "Broker Settings",
+    "host": "Host",
+    "port": "Port",
+    "username": "Username",
+    "password": "Password",
+    "topic": "Topic",
+    "publish": "Publish",
+    "subscribe": "Subscribe",
+    "message": "Message",
+    "qos": "QoS",
+    "brokerPlaceholder": "Broker Address",
+    "portPlaceholder": "Port",
+    "topicPlaceholder": "Topic",
+    "messagePlaceholder": "Message",
+    "messageList": "Message List"
+  },
+  "ftp": {
+    "title": "FTP Communication",
+    "description": "Easily manage files on FTP servers, supporting file upload, download, and delete operations.",
+    "connection": {
+      "title": "Connection Settings",
+      "anonymous": "Anonymous Login",
+      "server": "FTP Server Address",
+      "username": "Username",
+      "password": "Password",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "connecting": "Connecting..."
+    },
+    "files": {
+      "download": "Download",
+      "downloadSelected": "Download Selected",
+      "refresh": "Refresh",
+      "refreshList": "Refresh File List",
+      "upload": "Upload",
+      "uploadFiles": "Upload Files",
+      "table": {
+        "selectAll": "Select All",
+        "name": "Name",
+        "type": "Type",
+        "size": "Size",
+        "modifiedDate": "Modified Date"
+      }
+    },
+    "progress": {
+      "downloading": "Downloading",
+      "uploading": "Uploading"
+    },
+    "fileTypes": {
+      "file": "File",
+      "directory": "Directory"
+    }
+  },
+  "redis": {
+    "title": "Redis Management",
+    "description": "Connect and manage Redis databases, supporting all data types operations. Provides tree-based browsing interface.",
+    "server": {
+      "title": "Redis Server",
+      "add": "Add Redis Server",
+      "name": "Server Name",
+      "namePlaceholder": "Enter an identifier",
+      "host": "Host Address",
+      "hostPlaceholder": "e.g., localhost",
+      "port": "Port",
+      "password": "Password",
+      "passwordOptional": "Password (Optional)",
+      "database": "Database Number",
+      "connecting": "Connecting...",
+      "connected": "Connected",
+      "disconnect": "Disconnect",
+      "remove": "Remove Server",
+      "refresh": "Refresh",
+      "confirmDelete": "Confirm Server Deletion",
+      "confirmDeleteMessage": "Are you sure you want to delete this server connection? This action cannot be undone."
+    },
+    "key": {
+      "title": "Key Management",
+      "add": "Add Key",
+      "delete": "Delete",
+      "save": "Save",
+      "name": "Key Name",
+      "type": "Type",
+      "value": "Value",
+      "confirmDelete": "Confirm Key Deletion",
+      "confirmDeleteMessage": "Are you sure you want to delete the key {keyName}? This action cannot be undone.",
+      "placeholder": "Select a key to view its content",
+      "types": {
+        "string": "String",
+        "list": "List",
+        "hash": "Hash",
+        "set": "Set",
+        "zset": "Sorted Set"
+      },
+      "valueHint": "For Lists and Sets, use JSON array format. For Hashes and Sorted Sets, use JSON object format."
+    },
+    "statistics": {
+      "title": "Key Statistics",
+      "database": "Database",
+      "totalKeys": "Total Keys",
+      "validKeys": "Valid Keys",
+      "avgTTL": "Average TTL (sec)"
+    },
+    "stream": {
+      "id": "ID",
+      "timestamp": "Timestamp",
+      "fields": "Fields"
+    },
+    "connection": "Connection Settings",
+    "host": "Host",
+    "port": "Port",
+    "password": "Password",
+    "database": "Database",
+    "key": "Key",
+    "value": "Value",
+    "type": "Type",
+    "ttl": "TTL",
+    "set": "Set",
+    "get": "Get",
+    "delete": "Delete",
+    "clear": "Clear All",
+    "search": "Search",
+    "refresh": "Refresh",
+    "keyList": "Key List",
+    "monitoring": "Monitoring",
+    "startMonitor": "Start Monitor",
+    "stopMonitor": "Stop Monitor"
+  }
+}

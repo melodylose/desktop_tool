@@ -1,23 +1,36 @@
 <div class="tab-pane fade" id="settings" role="tabpanel">
-    <h2>設置</h2>
+    <h2 data-i18n="settings.title">設置</h2>
     <div class="card mb-3">
         <div class="card-body">
-            <h5>一般設定</h5>
+            <h5 data-i18n="settings.general">一般設定</h5>
             <div class="mb-3">
-                <label for="language" class="form-label">語言</label>
+                <label for="language" class="form-label" data-i18n="settings.language">語言</label>
                 <select class="form-select" id="language">
                     <option value="zh-TW">繁體中文</option>
                     <option value="en">English</option>
                 </select>
             </div>
             <div class="mb-3">
-                <label for="theme" class="form-label">主題</label>
+                <label for="theme" class="form-label" data-i18n="settings.theme">主題</label>
                 <select class="form-select" id="theme">
-                    <option value="light">淺色</option>
-                    <option value="dark">深色</option>
+                    <option value="light" data-i18n="settings.light">淺色</option>
+                    <option value="dark" data-i18n="settings.dark">深色</option>
                 </select>
             </div>
-            <button class="btn btn-primary">儲存設定</button>
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="autoUpdate" checked>
+                    <label class="form-check-label" for="autoUpdate" data-i18n="settings.autoUpdate">啟動時自動檢查更新</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <div class="d-flex align-items-center">
+                    <span class="me-2"><span data-i18n="settings.currentVersion">目前版本</span>：<span id="currentVersion">-</span></span>
+                    <button class="btn btn-outline-primary btn-sm" id="checkUpdate" data-i18n="settings.checkUpdate">立即檢查更新</button>
+                </div>
+                <div id="updateStatus" class="mt-2 small text-muted"></div>
+            </div>
+            <button class="btn btn-primary" data-i18n="common.save">儲存設定</button>
         </div>
     </div>
 </div>

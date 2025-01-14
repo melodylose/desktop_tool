@@ -4,34 +4,34 @@
         <div class="card-body">
             <div class="form-check mb-3">
                 <input class="form-check-input" type="checkbox" id="anonymousLogin">
-                <label class="form-check-label" for="anonymousLogin">
+                <label class="form-check-label" for="anonymousLogin" data-i18n="ftp.connection.anonymous">
                     Anonymous Login
                 </label>
             </div>
             <div class="row g-3">
                 <div class="col-md-3">
                     <div class="input-group">
-                        <input type="text" class="form-control" id="ftpServer" placeholder="FTP Server Address" list="ftpHistory">
+                        <input type="text" class="form-control" id="ftpServer" data-i18n-placeholder="ftp.connection.server" placeholder="FTP Server Address" list="ftpHistory">
                         <datalist id="ftpHistory"></datalist>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <input type="text" class="form-control" id="username" placeholder="Username">
+                    <input type="text" class="form-control" id="username" data-i18n-placeholder="ftp.connection.username" placeholder="Username">
                 </div>
                 <div class="col-md-3">
-                    <input type="password" class="form-control" id="password" placeholder="Password">
+                    <input type="password" class="form-control" id="password" data-i18n-placeholder="ftp.connection.password" placeholder="Password">
                 </div>
                 <div class="col-md-3">
                     <button class="btn btn-primary w-100 position-relative" id="connectBtn">
                         <span class="normal-state" style="display: inline-block;">
-                            <i class="fas fa-plug me-2"></i>Connect
+                            <i class="fas fa-plug me-2"></i><span data-i18n="ftp.connection.connect">Connect</span>
                         </span>
                         <span class="connected-state" style="display: none;">
-                            <i class="fas fa-plug-circle-check me-2"></i>Disconnect
+                            <i class="fas fa-plug-circle-check me-2"></i><span data-i18n="ftp.connection.disconnect">Disconnect</span>
                         </span>
                         <span class="connecting-state" style="display: none;">
                             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            Connecting...
+                            <span data-i18n="ftp.connection.connecting">Connecting...</span>
                         </span>
                     </button>
                 </div>
@@ -43,11 +43,11 @@
     <div class="card">
         <div class="card-body">
             <div class="mb-3 d-flex align-items-center">
-                <button class="btn btn-primary me-3" id="downloadBtn" disabled title="Download Selected">
-                    <i class="fas fa-download me-2"></i>Download
+                <button class="btn btn-primary me-3" id="downloadBtn" disabled data-i18n-title="ftp.files.downloadSelected" title="Download Selected">
+                    <i class="fas fa-download me-2"></i><span data-i18n="ftp.files.download">Download</span>
                 </button>
-                <button class="btn btn-secondary me-3" id="refreshBtn" disabled title="Refresh File List">
-                    <i class="fas fa-sync-alt me-2"></i>Refresh
+                <button class="btn btn-secondary me-3" id="refreshBtn" disabled data-i18n-title="ftp.files.refreshList" title="Refresh File List">
+                    <i class="fas fa-sync-alt me-2"></i><span data-i18n="ftp.files.refresh">Refresh</span>
                 </button>
                 <div class="progress flex-grow-1 d-none" id="downloadProgress">
                     <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
@@ -59,13 +59,13 @@
                         <tr>
                             <th class="checkbox-column">
                                 <div class="form-check">
-                                    <input type="checkbox" class="form-check-input" id="selectAll">
+                                    <input type="checkbox" class="form-check-input" id="selectAll" data-i18n-title="ftp.files.table.selectAll" title="Select All">
                                 </div>
                             </th>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Size</th>
-                            <th class="sortable" data-sort="date">
+                            <th data-i18n="ftp.files.table.name">Name</th>
+                            <th data-i18n="ftp.files.table.type">Type</th>
+                            <th data-i18n="ftp.files.table.size">Size</th>
+                            <th class="sortable" data-sort="date" data-i18n="ftp.files.table.modifiedDate">
                                 Modified Date <i class="fas fa-sort"></i>
                             </th>
                         </tr>
@@ -80,7 +80,7 @@
 
     <!-- Upload Button -->
     <div class="position-fixed bottom-0 end-0 p-4">
-        <button class="btn btn-success rounded-circle p-3" id="uploadBtn" title="Upload Files">
+        <button class="btn btn-success rounded-circle p-3" id="uploadBtn" data-i18n-title="ftp.files.uploadFiles" title="Upload Files">
             <i class="fas fa-upload"></i>
         </button>
     </div>

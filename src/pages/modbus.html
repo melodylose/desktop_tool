@@ -1,17 +1,17 @@
 <div class="tab-pane fade" id="modbus-tab" role="tabpanel">
-    <h2>Modbus 通訊設定</h2>
+    <h2 data-i18n="modbus.settings">Modbus 通訊設定</h2>
     <div class="card mb-3">
         <div class="card-body">
             <!-- 第一行：IP、Port 與連線 -->
             <div class="row mb-3">
                 <div class="col-md-5">
-                    <input type="text" class="form-control" id="modbus-ip" placeholder="IP 地址 (例: 192.168.1.100)">
+                    <input type="text" class="form-control" id="modbus-ip" data-i18n-placeholder="modbus.ipPlaceholder" placeholder="IP 地址 (例: 192.168.1.100)">
                 </div>
                 <div class="col-md-3">
-                    <input type="number" class="form-control" id="modbus-port" placeholder="Port (預設 502)">
+                    <input type="number" class="form-control" id="modbus-port" data-i18n-placeholder="modbus.portPlaceholder" placeholder="Port (預設 502)">
                 </div>
                 <div class="col-md-4">
-                    <button id="connect-btn" class="btn btn-primary w-100">連線</button>
+                    <button id="connect-btn" class="btn btn-primary w-100" data-i18n="common.connect">連線</button>
                 </div>
             </div>
 
@@ -19,26 +19,26 @@
             <div class="row mb-3">
                 <div class="col-md-3">
                     <select class="form-select" id="modbus-mode">
-                        <option selected>選擇模式</option>
-                        <option value="read-single">單筆讀取</option>
-                        <option value="read-continuous">連續讀取</option>
-                        <option value="write-single">單筆寫入</option>
-                        <option value="write-continuous">連續寫入</option>
+                        <option selected data-i18n="modbus.mode.label">選擇模式</option>
+                        <option value="read-single" data-i18n="modbus.mode.readSingle">單筆讀取</option>
+                        <option value="read-continuous" data-i18n="modbus.mode.readContinuous">連續讀取</option>
+                        <option value="write-single" data-i18n="modbus.mode.writeSingle">單筆寫入</option>
+                        <option value="write-continuous" data-i18n="modbus.mode.writeContinuous">連續寫入</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <input type="number" class="form-control" id="start-address" placeholder="起始地址">
+                    <input type="number" class="form-control" id="start-address" data-i18n-placeholder="modbus.startAddress" placeholder="起始地址">
                 </div>
                 <div class="col-md-3">
-                    <input type="number" class="form-control" id="data-length" placeholder="資料長度">
+                    <input type="number" class="form-control" id="data-length" data-i18n-placeholder="modbus.dataLength" placeholder="資料長度">
                 </div>
                 <div class="col-md-3">
                     <select class="form-select" id="modbus-method">
-                        <option selected>選擇使用方法</option>
-                        <option value="coil">Coil (0x)</option>
-                        <option value="discrete">Discrete Input (1x)</option>
-                        <option value="holding">Holding Register (4x)</option>
-                        <option value="input">Input Register (3x)</option>
+                        <option selected data-i18n="modbus.method.label">選擇使用方法</option>
+                        <option value="coil" data-i18n="modbus.method.coil">Coil (0x)</option>
+                        <option value="discrete" data-i18n="modbus.method.discrete">Discrete Input (1x)</option>
+                        <option value="holding" data-i18n="modbus.method.holding">Holding Register (4x)</option>
+                        <option value="input" data-i18n="modbus.method.input">Input Register (3x)</option>
                     </select>
                 </div>
             </div>
@@ -48,15 +48,15 @@
                 <!-- 寫入數值控制項 (初始隱藏) -->
                 <div class="col-md-6" id="write-data-container" style="display: none;">
                     <div class="input-group">
-                        <span class="input-group-text">寫入數值</span>
-                        <input type="text" class="form-control" id="write-data" placeholder="數值 (多個值用逗號分隔)">
+                        <span class="input-group-text" data-i18n="modbus.writeValue">寫入數值</span>
+                        <input type="text" class="form-control" id="write-data" data-i18n-placeholder="modbus.writeValuePlaceholder" placeholder="數值 (多個值用逗號分隔)">
                     </div>
                 </div>
                 <!-- 取樣頻率控制項 (初始隱藏) -->
                 <div class="col-md-6" id="sampling-rate-container" style="display: none;">
                     <div class="input-group">
-                        <span class="input-group-text">取樣頻率</span>
-                        <input type="number" class="form-control" id="sampling-rate" placeholder="頻率 (ms)" value="1000">
+                        <span class="input-group-text" data-i18n="modbus.samplingRate">取樣頻率</span>
+                        <input type="number" class="form-control" id="sampling-rate" data-i18n-placeholder="modbus.samplingRatePlaceholder" placeholder="頻率 (ms)" value="1000">
                     </div>
                 </div>
             </div>
@@ -64,7 +64,7 @@
             <!-- 執行按鈕 -->
             <div class="row mb-3">
                 <div class="col-12">
-                    <button id="execute-btn" class="btn btn-success w-100">執行</button>
+                    <button id="execute-btn" class="btn btn-success w-100" data-i18n="modbus.execute">執行</button>
                 </div>
             </div>
 
@@ -74,11 +74,11 @@
                     <table class="table table-striped table-hover" id="modbus-result-table">
                         <thead>
                             <tr>
-                                <th>地址</th>
-                                <th>數值</th>
-                                <th>時間戳記</th>
-                                <th>狀態</th>
-                                <th>方法</th>
+                                <th data-i18n="modbus.table.address">地址</th>
+                                <th data-i18n="modbus.table.value">數值</th>
+                                <th data-i18n="modbus.table.timestamp">時間戳記</th>
+                                <th data-i18n="modbus.table.status">狀態</th>
+                                <th data-i18n="modbus.table.method">方法</th>
                             </tr>
                         </thead>
                         <tbody>
