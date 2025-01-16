@@ -45,8 +45,10 @@
     "updateAvailable": "New version {version} available",
     "noUpdateAvailable": "You are using the latest version",
     "updateCheckError": "Error checking for updates",
-    "downloadingUpdate": "Downloading update ({progress}%)",
-    "updateReady": "Update is ready, restart the application to apply"
+    "downloadingUpdate": "Downloading update ({{progress}}%)",
+    "updateReady": "Update is ready, restart the application to apply",
+    "checking": "Checking for updates...",
+    "noUpdate": "No updates available"
   },
   "modbus": {
     "title": "Modbus Communication",
@@ -174,7 +176,7 @@
       "confirmDelete": "Confirm Server Deletion",
       "confirmDeleteMessage": "Are you sure you want to delete this server connection? This action cannot be undone."
     },
-    "key": {
+    "keyManagement": {
       "title": "Key Management",
       "add": "Add Key",
       "delete": "Delete",

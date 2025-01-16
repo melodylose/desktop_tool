@@ -22,26 +22,18 @@ async function initializeApp() {
         // 等待翻譯管理器初始化完成
         await translationManager.waitForInitialization();
         await translationManager.waitForDomReady();
-        console.log('Translation manager and DOM are ready, initializing home page...');
-        
-        // 初始化首頁
-        await initializePage('home');
-        
-        // 監聽頁籤切換事件
-        const tabLinks = document.querySelectorAll('.nav-link, .nav-item button');
-        tabLinks.forEach(link => {
+
+        // 添加頁籤事件監聽
+        document.querySelectorAll('[data-bs-toggle="pill"]').forEach(link => {
             link.addEventListener('click', async () => {
                 try {
                     // 取得目標頁面名稱
                     let pageName;
                     if (link.id) {
-                        // 如果有 ID，從 ID 中獲取頁面名稱
-                        pageName = link.id.replace('-tab-btn', '').replace('-btn', '');
+                        pageName = link.getAttribute('data-page');
                     } else if (link.getAttribute('data-bs-target')) {
-                        // 如果有 data-bs-target 屬性，從中獲取頁面名稱
                         pageName = link.getAttribute('data-bs-target').replace('#', '').replace('-tab', '');
                     } else {
-                        // 如果都沒有，從父元素或其他屬性中尋找
                         const target = link.closest('[data-bs-target]');
                         if (target) {
                             pageName = target.getAttribute('data-bs-target').replace('#', '').replace('-tab', '');
@@ -50,17 +42,85 @@ async function initializeApp() {
 
                     if (pageName) {
                         console.log(`Tab switched to: ${pageName}`);
-                        await translationManager.updateAllTranslations();
+                        await loadPage(pageName);
                     } else {
                         console.warn('Could not determine page name from tab click');
+                        // 可以考慮添加使用者提示
+                        document.getElementById('sidebar-nav-content').innerHTML = `
+                            <div class="alert alert-warning">
+                                無法確定目標頁面
+                            </div>
+                        `;
                     }
                 } catch (error) {
                     console.error('Error handling tab click:', error);
+                    // 可以考慮添加使用者提示
+                    document.getElementById('sidebar-nav-content').innerHTML = `
+                        <div class="alert alert-danger">
+                            頁面載入失敗: ${error.message}
+                        </div>
+                    `;
                 }
             });
         });
+
+        // 載入首頁
+        await loadPage('home');
     } catch (error) {
         console.error('Error during initialization:', error);
+    }
+}
+
+async function loadPage(page) {
+    try {
+        const response = await fetch(`pages/${page}.html`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const html = await response.text();
+
+        // 等待 DOM 更新完成
+        await new Promise((resolve, reject) => {
+            const contentDiv = document.getElementById('sidebar-nav-content');
+            if (!contentDiv) {
+                reject(new Error('Content container not found'));
+                return;
+            }
+
+            // 設置 MutationObserver
+            const observer = new MutationObserver((mutations, obs) => {
+                obs.disconnect();  // 停止觀察
+                resolve();  // DOM 更新完成
+            });
+
+            // 開始觀察
+            observer.observe(contentDiv, {
+                childList: true,  // 觀察子節點變化
+                subtree: true     // 觀察所有後代節點
+            });
+
+            // 更新 DOM
+            contentDiv.innerHTML = html;
+
+            // 確保新內容可見
+            const newContent = contentDiv.querySelector('.tab-pane');
+            if (newContent) {
+                newContent.classList.add('active', 'show');
+            }
+        });
+
+        // DOM 已經更新完成，可以安全地初始化頁面
+        await initializePage(page);
+
+    } catch (error) {
+        console.error(`Error loading page ${page}:`, error);
+        if (document.getElementById('sidebar-nav-content')) {
+            document.getElementById('sidebar-nav-content').innerHTML = `
+                <div class="alert alert-danger">
+                    Error loading page: ${error.message}
+                </div>
+            `;
+        }
     }
 }
 
@@ -78,50 +138,50 @@ if (document.readyState === 'loading') {
 // 初始化頁面
 async function initializePage(pageName) {
     console.log(`Preparing to initialize ${pageName} page`);
+    translationManager.showLoading();
 
-    // 直接初始化對應的頁面
     try {
         console.log(`Initializing ${pageName} page...`);
         switch (pageName) {
             case 'home':
                 // 首頁初始化
-                await translationManager.updateAllTranslations();
                 break;
             case 'modbus':
                 // Modbus頁面初始化
                 modbusHandler.initialize();
-                await translationManager.updateAllTranslations();
                 break;
             case 'mqtt':
                 // MQTT頁面初始化
                 mqttHandler.initialize();
-                await translationManager.updateAllTranslations();
                 break;
             case 'ftp':
                 // FTP頁面初始化
                 ftpHandler.initialize();
-                await translationManager.updateAllTranslations();
                 break;
             case 'redis':
                 // Redis頁面初始化
                 redisHandler.initialize();
-                await translationManager.updateAllTranslations();
                 break;
             case 'settings':
                 // 設定頁面初始化
                 optionsPage.initializeOptionsPage();
-                await translationManager.updateAllTranslations();
                 break;
             case 'options':  // 為了向後兼容
                 // 設定頁面初始化
                 optionsPage.initializeOptionsPage();
-                await translationManager.updateAllTranslations();
                 break;
             default:
                 console.warn(`Unknown page: ${pageName}`);
         }
+
+        await translationManager.updateAllTranslations();
+        await translationManager.waitForDomReady();
+
     } catch (error) {
         console.error(`Error initializing ${pageName} page:`, error);
+        throw error;
+    } finally {
+        translationManager.hideLoading();
     }
 }
 

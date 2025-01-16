@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,6 +16,7 @@
             overflow: hidden;
             height: 100vh;
         }
+
         .sidebar {
             height: 100vh;
             background-color: #f8f9fa;
@@ -24,9 +26,11 @@
             position: fixed;
             z-index: 1000;
         }
+
         .sidebar.expanded {
             width: 250px;
         }
+
         .main-content {
             margin-left: 60px;
             transition: margin-left 0.3s;
@@ -34,14 +38,17 @@
             overflow-y: auto;
             width: calc(100vw - 60px);
         }
+
         .main-content.sidebar-expanded {
             margin-left: 250px;
             width: calc(100vw - 250px);
         }
+
         .content-wrapper {
             height: 100%;
             padding: 1rem;
         }
+
         .nav-pills .nav-link {
             width: 100%;
             text-align: left;
@@ -51,18 +58,22 @@
             align-items: center;
             padding: 10px;
         }
+
         .nav-link .icon {
             width: 20px;
             text-align: center;
             margin-right: 10px;
         }
+
         .nav-link .text {
             opacity: 0;
             transition: opacity 0.3s;
         }
+
         .sidebar.expanded .nav-link .text {
             opacity: 1;
         }
+
         .sidebar-toggle {
             position: absolute;
             bottom: 20px;
@@ -74,137 +85,100 @@
             cursor: pointer;
             transition: left 0.3s;
         }
+
         .sidebar.expanded .sidebar-toggle {
             left: 210px;
         }
+
         .card {
             background-color: #FFDAB9;
         }
     </style>
 </head>
+
 <body>
-    <div class="container-fluid p-0">
-        <div class="row g-0">
-            <!-- 左側導航欄 -->
-            <div class="sidebar pt-3" id="sidebar">
-                <div class="nav flex-column nav-pills" id="sidebar-nav" role="tablist" aria-orientation="vertical">
-                    <button class="nav-link active" id="home-tab" data-bs-toggle="pill" data-page="home" type="button" role="tab">
-                        <span class="icon"><i class="fas fa-home"></i></span>
-                        <span class="text" data-i18n="home.title">首頁</span>
-                    </button>
-                    <button class="nav-link" id="modbus-tab-btn" data-bs-toggle="pill" data-page="modbus" type="button" role="tab">
-                        <span class="icon"><i class="fas fa-network-wired"></i></span>
-                        <span class="text" data-i18n="modbus.title">Modbus 通訊</span>
-                    </button>
-                    <button class="nav-link" id="mqtt-tab-btn" data-bs-toggle="pill" data-page="mqtt" type="button" role="tab">
-                        <span class="icon"><i class="fas fa-broadcast-tower"></i></span>
-                        <span class="text" data-i18n="mqtt.title">MQTT 功能</span>
-                    </button>
-                    <button class="nav-link" id="ftp-tab-btn" data-bs-toggle="pill" data-page="ftp" type="button" role="tab">
-                        <span class="icon"><i class="fas fa-server"></i></span>
-                        <span class="text" data-i18n="ftp.title">FTP 通訊</span>
-                    </button>
-                    <button class="nav-link" id="redis-tab-btn" data-bs-toggle="pill" data-page="redis" type="button" role="tab">
-                        <span class="icon"><i class="fas fa-database"></i></span>
-                        <span class="text" data-i18n="redis.title">Redis 管理</span>
-                    </button>
-                    <button class="nav-link" id="settings-tab" data-bs-toggle="pill" data-page="options" type="button" role="tab">
-                        <span class="icon"><i class="fas fa-cog"></i></span>
-                        <span class="text" data-i18n="settings.title">設置</span>
+    <div id="loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 bg-white" style="z-index: 9999;">
+        <div class="spinner-border text-primary" role="status"
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+    <div id="main-content">
+        <div class="container-fluid p-0">
+            <div class="row g-0">
+                <!-- 左側導航欄 -->
+                <div class="sidebar pt-3" id="sidebar">
+                    <div class="nav flex-column nav-pills" id="sidebar-nav" role="tablist" aria-orientation="vertical">
+                        <button class="nav-link active" id="home-tab" data-bs-toggle="pill" data-page="home"
+                            type="button" role="tab">
+                            <span class="icon"><i class="fas fa-home"></i></span>
+                            <span class="text" data-i18n="home.title">首頁</span>
+                        </button>
+                        <button class="nav-link" id="modbus-tab-btn" data-bs-toggle="pill" data-page="modbus"
+                            type="button" role="tab">
+                            <span class="icon"><i class="fas fa-network-wired"></i></span>
+                            <span class="text" data-i18n="modbus.title">Modbus 通訊</span>
+                        </button>
+                        <button class="nav-link" id="mqtt-tab-btn" data-bs-toggle="pill" data-page="mqtt" type="button"
+                            role="tab">
+                            <span class="icon"><i class="fas fa-broadcast-tower"></i></span>
+                            <span class="text" data-i18n="mqtt.title">MQTT 功能</span>
+                        </button>
+                        <button class="nav-link" id="ftp-tab-btn" data-bs-toggle="pill" data-page="ftp" type="button"
+                            role="tab">
+                            <span class="icon"><i class="fas fa-server"></i></span>
+                            <span class="text" data-i18n="ftp.title">FTP 通訊</span>
+                        </button>
+                        <button class="nav-link" id="redis-tab-btn" data-bs-toggle="pill" data-page="redis"
+                            type="button" role="tab">
+                            <span class="icon"><i class="fas fa-database"></i></span>
+                            <span class="text" data-i18n="redis.title">Redis 管理</span>
+                        </button>
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="pill" data-page="options"
+                            type="button" role="tab">
+                            <span class="icon"><i class="fas fa-cog"></i></span>
+                            <span class="text" data-i18n="settings.title">設置</span>
+                        </button>
+                    </div>
+                    <button class="sidebar-toggle" id="sidebarToggle">
+                        <i class="fas fa-chevron-right"></i>
                     </button>
                 </div>
-                <button class="sidebar-toggle" id="sidebarToggle">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
 
-            <!-- 右側內容區域 -->
-            <div class="main-content" id="mainContent">
-                <div class="content-wrapper p-3">
-                    <div class="tab-content" id="sidebar-nav-content">
-                        <!-- 內容將由 JavaScript 動態載入 -->
+                <!-- 右側內容區域 -->
+                <div class="main-content" id="mainContent">
+                    <div class="content-wrapper p-3">
+                        <div class="tab-content" id="sidebar-nav-content">
+                            <!-- 內容將由 JavaScript 動態載入 -->
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="../node_modules/jquery/dist/jquery.min.js"></script>
-    <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="renderer.js"></script>
-    <script>
-        // 頁面載入完成後執行
-        document.addEventListener('DOMContentLoaded', function() {
-            // 為所有頁籤按鈕添加點擊事件
-            document.querySelectorAll('[data-bs-toggle="pill"]').forEach(button => {
-                button.addEventListener('click', function() {
-                    const page = this.getAttribute('data-page');
-                    loadPage(page);
-                });
+        <script src="../node_modules/jquery/dist/jquery.min.js"></script>
+        <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="renderer.js"></script>
+        <script>
+            // 側邊欄展開/縮小功能
+            document.getElementById('sidebarToggle').addEventListener('click', function () {
+                const sidebar = document.getElementById('sidebar');
+                const mainContent = document.getElementById('mainContent');
+                const toggleIcon = this.querySelector('i');
+
+                sidebar.classList.toggle('expanded');
+                mainContent.classList.toggle('sidebar-expanded');
+
+                if (sidebar.classList.contains('expanded')) {
+                    toggleIcon.classList.remove('fa-chevron-right');
+                    toggleIcon.classList.add('fa-chevron-left');
+                } else {
+                    toggleIcon.classList.remove('fa-chevron-left');
+                    toggleIcon.classList.add('fa-chevron-right');
+                }
             });
-
-            // 預設載入首頁
-            loadPage('home');
-        });
-
-        // 載入頁面內容
-        async function loadPage(page) {
-            try {
-                const response = await fetch(`pages/${page}.html`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const html = await response.text();
-                
-                // 清空並設置新內容
-                const contentDiv = document.getElementById('sidebar-nav-content');
-                
-                // 移除所有現有內容的 active 類別
-                const currentActive = contentDiv.querySelector('.active');
-                if (currentActive) {
-                    currentActive.classList.remove('active', 'show');
-                }
-
-                // 添加新內容
-                contentDiv.innerHTML = html;
-                
-                // 確保新內容可見
-                const newContent = contentDiv.querySelector('.tab-pane');
-                if (newContent) {
-                    newContent.classList.add('active', 'show');
-                }
-
-                // 初始化頁面功能
-                if (typeof initializePage === 'function') {
-                    initializePage(page);
-                }
-            } catch (error) {
-                console.error('Error loading page:', error);
-                document.getElementById('sidebar-nav-content').innerHTML = `
-                    <div class="alert alert-danger">
-                        Error loading page: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // 側邊欄展開/縮小功能
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            const toggleIcon = this.querySelector('i');
-            
-            sidebar.classList.toggle('expanded');
-            mainContent.classList.toggle('sidebar-expanded');
-            
-            if (sidebar.classList.contains('expanded')) {
-                toggleIcon.classList.remove('fa-chevron-right');
-                toggleIcon.classList.add('fa-chevron-left');
-            } else {
-                toggleIcon.classList.remove('fa-chevron-left');
-                toggleIcon.classList.add('fa-chevron-right');
-            }
-        });
-    </script>
+        </script>
+    </div>
 </body>
+
 </html>

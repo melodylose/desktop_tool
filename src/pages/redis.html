@@ -21,13 +21,13 @@
                 <div class="card-body d-flex flex-column">
                     <div class="mb-3 d-flex align-items-center">
                         <button class="btn btn-primary me-2" id="addKeyBtn" disabled>
-                            <i class="fas fa-plus me-2"></i><span data-i18n="redis.key.add">新增鍵值</span>
+                            <i class="fas fa-plus me-2"></i><span data-i18n="redis.keyManagement.add">新增鍵值</span>
                         </button>
                         <button class="btn btn-danger me-2" id="deleteKeyBtn" disabled>
-                            <i class="fas fa-trash me-2"></i><span data-i18n="redis.key.delete">刪除</span>
+                            <i class="fas fa-trash me-2"></i><span data-i18n="redis.keyManagement.delete">刪除</span>
                         </button>
                         <button class="btn btn-success me-2" id="saveExistingKeyBtn" disabled>
-                            <i class="fas fa-save me-2"></i><span data-i18n="redis.key.save">儲存</span>
+                            <i class="fas fa-save me-2"></i><span data-i18n="redis.keyManagement.save">儲存</span>
                         </button>
                     </div>
                     <div class="mb-3">
@@ -52,17 +52,17 @@
                         <!-- 初始提示 -->
                         <div id="keyContentPlaceholder" class="text-center text-muted pt-5">
                             <i class="fas fa-database fa-3x mb-3"></i>
-                            <p data-i18n="redis.key.placeholder">選擇一個鍵值來查看內容</p>
+                            <p data-i18n="redis.keyManagement.placeholder">選擇一個鍵值來查看內容</p>
                         </div>
                         
                         <!-- 鍵值編輯表單 -->
                         <div id="keyContentForm" class="p-3" style="display: none;">
                             <div class="mb-3">
-                                <label for="keyName" class="form-label" data-i18n="redis.key.name">鍵值名稱</label>
+                                <label for="keyName" class="form-label" data-i18n="redis.keyManagement.name">鍵值名稱</label>
                                 <input type="text" class="form-control" id="keyName" readonly>
                             </div>
                             <div class="mb-3">
-                                <label for="keyType" class="form-label" data-i18n="redis.key.type">類型</label>
+                                <label for="keyType" class="form-label" data-i18n="redis.keyManagement.type">類型</label>
                                 <input type="text" class="form-control" id="keyType" readonly>
                             </div>
                             <!-- Stream Data Display -->
@@ -82,7 +82,7 @@
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="keyValue" class="form-label" data-i18n="redis.key.value">值</label>
+                                <label for="keyValue" class="form-label" data-i18n="redis.keyManagement.value">值</label>
                                 <textarea class="form-control font-monospace" id="keyValue" rows="10" style="white-space: pre; tab-size: 2;"></textarea>
                             </div>
                         </div>
@@ -147,28 +147,28 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" data-i18n="redis.key.add">新增鍵值</h5>
+                <h5 class="modal-title" data-i18n="redis.keyManagement.add">新增鍵值</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label" data-i18n="redis.key.type">類型</label>
+                    <label class="form-label" data-i18n="redis.keyManagement.type">類型</label>
                     <select class="form-select" id="newKeyType">
-                        <option value="string" data-i18n="redis.key.types.string">String</option>
-                        <option value="list" data-i18n="redis.key.types.list">List</option>
-                        <option value="hash" data-i18n="redis.key.types.hash">Hash</option>
-                        <option value="set" data-i18n="redis.key.types.set">Set</option>
-                        <option value="zset" data-i18n="redis.key.types.zset">Sorted Set</option>
+                        <option value="string" data-i18n="redis.keyManagement.types.string">String</option>
+                        <option value="list" data-i18n="redis.keyManagement.types.list">List</option>
+                        <option value="hash" data-i18n="redis.keyManagement.types.hash">Hash</option>
+                        <option value="set" data-i18n="redis.keyManagement.types.set">Set</option>
+                        <option value="zset" data-i18n="redis.keyManagement.types.zset">Sorted Set</option>
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label" data-i18n="redis.key.name">鍵名</label>
+                    <label class="form-label" data-i18n="redis.keyManagement.name">鍵名</label>
                     <input type="text" class="form-control" id="newKeyName">
                 </div>
                 <div class="mb-3">
-                    <label class="form-label" data-i18n="redis.key.value">值</label>
+                    <label class="form-label" data-i18n="redis.keyManagement.value">值</label>
                     <textarea class="form-control" id="newKeyValue" rows="4"></textarea>
-                    <small class="form-text text-muted" data-i18n="redis.key.valueHint">
+                    <small class="form-text text-muted" data-i18n="redis.keyManagement.valueHint">
                         對於List和Set，請使用JSON陣列格式。對於Hash和Sorted Set，請使用JSON物件格式。
                     </small>
                 </div>
@@ -184,7 +184,7 @@
 <!-- Server Context Menu -->
 <div class="dropdown-menu" id="serverContextMenu">
     <a class="dropdown-item" href="#" id="addKeyMenuItem">
-        <i class="fas fa-plus me-2"></i><span data-i18n="redis.key.add">新增鍵值</span>
+        <i class="fas fa-plus me-2"></i><span data-i18n="redis.keyManagement.add">新增鍵值</span>
     </a>
     <a class="dropdown-item" href="#" id="refreshMenuItem">
         <i class="fas fa-sync-alt me-2"></i><span data-i18n="redis.server.refresh">重新整理</span>
@@ -203,15 +203,15 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteConfirmModalLabel" data-i18n="redis.key.confirmDelete">確認刪除鍵值</h5>
+                <h5 class="modal-title" id="deleteConfirmModalLabel" data-i18n="redis.keyManagement.confirmDelete">確認刪除鍵值</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <span data-i18n="redis.key.confirmDeleteMessage">確定要刪除鍵值 <span id="deleteKeyName" class="fw-bold"></span> 嗎？此操作無法復原。</span>
+                <span data-i18n="redis.keyManagement.confirmDeleteMessage">確定要刪除鍵值 <span id="deleteKeyName" class="fw-bold"></span> 嗎？此操作無法復原。</span>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" data-i18n="redis.key.delete">刪除</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" data-i18n="redis.keyManagement.delete">刪除</button>
             </div>
         </div>
     </div>
@@ -230,7 +230,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
-                <button type="button" class="btn btn-danger" id="confirmServerDeleteBtn" data-i18n="redis.key.delete">刪除</button>
+                <button type="button" class="btn btn-danger" id="confirmServerDeleteBtn" data-i18n="redis.keyManagement.delete">刪除</button>
             </div>
         </div>
     </div>

@@ -45,8 +45,10 @@
     "updateAvailable": "發現新版本 {version}",
     "noUpdateAvailable": "已是最新版本",
     "updateCheckError": "檢查更新時發生錯誤",
-    "downloadingUpdate": "正在下載更新 ({progress}%)",
-    "updateReady": "更新已準備完成，重新啟動應用程式以套用更新"
+    "downloadingUpdate": "正在下載更新 ({{progress}}%)",
+    "updateReady": "更新已準備完成，重新啟動應用程式以套用更新",
+    "checking": "檢查更新中...",
+    "noUpdate": "目前是最新版本"
   },
   "modbus": {
     "title": "Modbus 通訊",
@@ -179,7 +181,7 @@
       "confirmDelete": "確認刪除伺服器",
       "confirmDeleteMessage": "確定要刪除此伺服器連線嗎？此操作無法復原。"
     },
-    "key": {
+    "keyManagement": {
       "title": "鍵值管理",
       "add": "新增鍵值",
       "delete": "刪除",

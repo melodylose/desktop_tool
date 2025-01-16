@@ -51,7 +51,7 @@ class RedisUIHandler {
 
     _initializeElements() {
         this.elements = {
-            addServerBtn: document.getElementById('addServerBtn'),
+            addServerBtn: document.querySelector('#addServerBtn'),
             connectBtn: document.getElementById('connectBtn'),
             connectBtnNormalState: document.querySelector('#connectBtn .normal-state'),
             connectBtnConnectingState: document.querySelector('#connectBtn .connecting-state'),

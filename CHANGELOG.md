@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2025-01-16
+
+### Added
+- 強化多語系支援功能
+  - 新增語言切換機制
+  - 優化翻譯檔案結構
+  - 改進語言資源載入流程
+
+### Changed
+- 改進頁面載入機制
+  - 優化頁面初始化流程
+  - 改進 DOM 元素載入和更新機制
+  - 強化頁面切換效能
+- 更新使用者介面
+  - 優化載入狀態顯示
+  - 改進頁面切換動畫
+  - 強化錯誤提示機制
+
+### Fixed
+- 修復頁面切換時的 DOM 更新問題
+- 改進多語系資源載入時的錯誤處理
+- 優化頁面初始化效能問題
+
 ## [1.2.4] - 2025-01-14
 
 ### Changed
