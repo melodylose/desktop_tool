@@ -45,6 +45,7 @@
     "updateAvailable": "發現新版本 {version}",
     "noUpdateAvailable": "已是最新版本",
     "updateCheckError": "檢查更新時發生錯誤",
+    "updateError": "更新設定失敗",
     "downloadingUpdate": "正在下載更新 ({{progress}}%)",
     "updateReady": "更新已準備完成，重新啟動應用程式以套用更新",
     "checking": "檢查更新中...",

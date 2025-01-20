@@ -1,10 +1,21 @@
+:root {
+    --selected-bg: #e3f2fd;
+    --hover-bg: #f5f5f5;
+}
+
+/* Dark mode variables */
+[data-theme='dark'] {
+    --selected-bg: #2c3e50;
+    --hover-bg: #34495e;
+}
+
 /* FTP 頁面樣式 */
 .selected-row {
-    background-color: #e3f2fd !important;
+    background-color: var(--selected-bg) !important;
 }
 
 .table-hover tbody tr:hover {
-    background-color: #f5f5f5;
+    background-color: var(--hover-bg);
 }
 
 .form-check-input {
@@ -332,4 +343,71 @@
 
 .context-menu-item:hover {
     background-color: #f5f5f5;
+}
+
+/* Dark mode styles */
+[data-theme='dark'] {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+}
+
+[data-theme='dark'] .server-node {
+    background-color: #34495e;
+}
+
+[data-theme='dark'] .server-header {
+    background-color: #2c3e50;
+}
+
+[data-theme='dark'] .server-header.active {
+    background-color: #1a1d23;
+}
+
+[data-theme='dark'] .key-node {
+    background-color: #2c3e50;
+}
+
+[data-theme='dark'] .key-node.selected {
+    background-color: #1a1d23;
+}
+
+[data-theme='dark'] .key-node.selected i {
+    color: #ecf0f1;
+}
+
+[data-theme='dark'] .type-label {
+    background-color: #1a1d23;
+    color: #ecf0f1;
+}
+
+[data-theme='dark'] .key-icon {
+    background-color: #1a1d23;
+}
+
+[data-theme='dark'] .key-icon-string::before {
+    color: #ecf0f1;
+}
+
+[data-theme='dark'] .key-icon-hash::before {
+    color: #ecf0f1;
+}
+
+[data-theme='dark'] .key-icon-list::before {
+    color: #ecf0f1;
+}
+
+[data-theme='dark'] .key-icon-set::before {
+    color: #ecf0f1;
+}
+
+[data-theme='dark'] .key-icon-zset::before {
+    color: #ecf0f1;
+}
+
+[data-theme='dark'] .key-icon-stream::before {
+    color: #ecf0f1;
+}
+
+[data-theme='dark'] .key-icon-json::before {
+    color: #ecf0f1;
 }

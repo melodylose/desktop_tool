@@ -31,7 +31,51 @@ class ThemeManager {
     }
 
     applyTheme(theme) {
+        // 設定 Bootstrap 5 主題
         document.body.setAttribute('data-bs-theme', theme);
+        // 設定自定義主題
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        
+        // 更新特定元素的主題相關類別
+        const isDark = theme === 'dark';
+        
+        // 更新表格樣式
+        document.querySelectorAll('.table').forEach(table => {
+            table.classList.toggle('table-dark', isDark);
+        });
+
+        // 更新卡片樣式
+        document.querySelectorAll('.card').forEach(card => {
+            if (isDark) {
+                card.classList.add('border-secondary');
+            } else {
+                card.classList.remove('border-secondary');
+            }
+        });
+
+        // 更新導航標籤
+        document.querySelectorAll('.nav-tabs .nav-link').forEach(tab => {
+            if (isDark) {
+                tab.classList.add('text-light');
+            } else {
+                tab.classList.remove('text-light');
+            }
+        });
+
+        // 更新按鈕樣式
+        document.querySelectorAll('.btn-light').forEach(btn => {
+            if (isDark) {
+                btn.classList.add('btn-dark');
+                btn.classList.remove('btn-light');
+            } else {
+                btn.classList.add('btn-light');
+                btn.classList.remove('btn-dark');
+            }
+        });
+
+        // 觸發自定義事件，通知其他組件主題已更改
+        const event = new CustomEvent('themeChanged', { detail: { theme } });
+        document.dispatchEvent(event);
     }
 
     getCurrentTheme() {

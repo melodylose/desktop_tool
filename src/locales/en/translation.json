@@ -45,6 +45,7 @@
     "updateAvailable": "New version {version} available",
     "noUpdateAvailable": "You are using the latest version",
     "updateCheckError": "Error checking for updates",
+    "updateError": "Failed to update settings",
     "downloadingUpdate": "Downloading update ({{progress}}%)",
     "updateReady": "Update is ready, restart the application to apply",
     "checking": "Checking for updates...",

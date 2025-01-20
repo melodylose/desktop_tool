@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "jest",
+    "test": "jest --verbose",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "build": "electron-builder build",

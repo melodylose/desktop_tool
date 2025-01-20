@@ -1,0 +1,173 @@
+:root {
+    --bg-primary: #FFFAE3;
+    --bg-sidebar: #f8f9fa;
+    --border-color: #dee2e6;
+    --card-bg: #FFDAB9;
+    --text-color: #212529;
+    --sidebar-toggle-color: #6c757d;
+}
+
+[data-bs-theme='dark'] {
+    --bg-primary: #1a1a1a;
+    --bg-sidebar: #2c3e50;
+    --border-color: #4a5568;
+    --card-bg: #2d3748;
+    --text-color: #f8f9fa;
+    --sidebar-toggle-color: #a0aec0;
+}
+
+body {
+    background-color: var(--bg-primary);
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100vh;
+    color: var(--text-color);
+}
+
+.sidebar {
+    height: 100vh;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    width: 60px;
+    transition: all 0.3s;
+    position: fixed;
+    z-index: 1000;
+}
+
+.sidebar.expanded {
+    width: 250px;
+}
+
+.main-content {
+    margin-left: 60px;
+    transition: margin-left 0.3s;
+    height: 100vh;
+    overflow-y: auto;
+    width: calc(100vw - 60px);
+}
+
+.main-content.sidebar-expanded {
+    margin-left: 250px;
+    width: calc(100vw - 250px);
+}
+
+.content-wrapper {
+    height: 100%;
+    padding: 1rem;
+}
+
+.nav-pills .nav-link {
+    width: 100%;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    color: var(--text-color);
+}
+
+.nav-link .icon {
+    width: 20px;
+    text-align: center;
+    margin-right: 10px;
+}
+
+.nav-link .text {
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.sidebar.expanded .nav-link .text {
+    opacity: 1;
+}
+
+.sidebar-toggle {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    transform: none;
+    background: none;
+    border: none;
+    color: var(--sidebar-toggle-color);
+    cursor: pointer;
+    transition: left 0.3s;
+}
+
+.sidebar.expanded .sidebar-toggle {
+    left: 210px;
+}
+
+/* Card styles */
+.card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+/* Tab styles */
+.nav-tabs {
+    border-bottom-color: var(--border-color);
+}
+
+.nav-tabs .nav-link {
+    color: var(--text-color);
+}
+
+.nav-tabs .nav-link.active {
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Custom Bootstrap overrides for dark mode */
+[data-bs-theme='dark'] .card {
+    background-color: var(--card-bg);
+}
+
+[data-bs-theme='dark'] .nav-tabs .nav-link.active {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-bs-theme='dark'] .table {
+    color: var(--text-color);
+}
+
+[data-bs-theme='dark'] .modal-content {
+    background-color: var(--bg-sidebar);
+    border-color: var(--border-color);
+}
+
+[data-bs-theme='dark'] .modal-header,
+[data-bs-theme='dark'] .modal-footer {
+    border-color: var(--border-color);
+}
+
+/* Input controls in dark mode */
+[data-bs-theme='dark'] .form-control,
+[data-bs-theme='dark'] .form-select {
+    background-color: var(--bg-sidebar);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-bs-theme='dark'] .form-control:focus,
+[data-bs-theme='dark'] .form-select:focus {
+    background-color: var(--bg-sidebar);
+    border-color: #0d6efd;
+    color: var(--text-color);
+}
+
+/* Button styles in dark mode */
+[data-bs-theme='dark'] .btn-light {
+    background-color: var(--bg-sidebar);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-bs-theme='dark'] .btn-light:hover {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
