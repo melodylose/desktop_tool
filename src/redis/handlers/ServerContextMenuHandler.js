@@ -4,7 +4,7 @@ const BaseContextMenuHandler = require('./BaseContextMenuHandler');
 
 /**
  * 伺服器上下文選單處理器
- * 處理 Redis 伺服器節點的上下文選單操作
+ * 處理伺服器節點的上下文選單
  * @class ServerContextMenuHandler
  * @extends BaseContextMenuHandler
  */
@@ -13,19 +13,13 @@ class ServerContextMenuHandler extends BaseContextMenuHandler {
      * 建立伺服器上下文選單處理器
      * @param {HTMLElement} container - 選單容器元素
      * @param {UIStateManager} uiStateManager - UI 狀態管理器
-     * @param {RedisOperations} redisOperations - Redis 操作管理器
+     * @param {RedisOperations} redisOperations - Redis 操作對象
      */
     constructor(container, uiStateManager, redisOperations) {
         super(container, uiStateManager);
         this.redisOperations = redisOperations;
         this.currentConnectionId = null;
-        this.menuItems = {
-            addKey: null,
-            refresh: null,
-            reconnect: null,
-            disconnect: null,
-            remove: null
-        };
+        this.menuItems = {};
     }
 
     /**
@@ -38,16 +32,45 @@ class ServerContextMenuHandler extends BaseContextMenuHandler {
         menu.id = 'serverContextMenu';
         menu.className = 'context-menu';
 
+        // 建立選單項目
         this.menuItems = {
-            addKey: this._createMenuItem('addKeyMenuItem', 'plus', '新增鍵值', 'redis.keyManagement.add'),
-            refresh: this._createMenuItem('refreshMenuItem', 'sync', '重新整理', 'redis.server.refresh'),
-            reconnect: this._createMenuItem('reconnectMenuItem', 'plug', '重新連線', 'redis.server.reconnect'),
-            disconnect: this._createMenuItem('disconnectMenuItem', 'power-off', '斷開連線', 'redis.server.disconnect'),
-            remove: this._createMenuItem('removeServerMenuItem', 'trash', '移除伺服器', 'redis.server.remove')
+            addKey: this._createMenuItem('plus', '新增鍵值', 'redis.keyManagement.add', 'addKey'),
+            refresh: this._createMenuItem('sync', '重新整理', 'redis.server.refresh', 'refresh'),
+            reconnect: this._createMenuItem('plug', '重新連線', 'redis.server.reconnect', 'reconnect'),
+            disconnect: this._createMenuItem('power-off', '斷開連線', 'redis.server.disconnect', 'disconnect'),
+            remove: this._createMenuItem('trash', '移除伺服器', 'redis.server.remove', 'removeServer')
         };
 
+        // 將選單項目添加到選單中
         Object.values(this.menuItems).forEach(item => menu.appendChild(item));
+
         return menu;
+    }
+
+    /**
+     * 建立選單項目
+     * @private
+     * @param {string} icon - Font Awesome 圖示名稱
+     * @param {string} text - 選單項目文字
+     * @param {string} i18nKey - 國際化鍵值
+     * @param {string} id - 選單項目 ID 前綴
+     * @returns {HTMLElement} 選單項目元素
+     */
+    _createMenuItem(icon, text, i18nKey, id) {
+        const item = document.createElement('div');
+        item.className = 'menu-item';
+        item.id = `${id}MenuItem`;
+
+        const iconElement = document.createElement('i');
+        iconElement.className = `fas fa-${icon}`;
+        item.appendChild(iconElement);
+
+        const textElement = document.createElement('span');
+        textElement.textContent = text;
+        textElement.setAttribute('data-i18n', i18nKey);
+        item.appendChild(textElement);
+
+        return item;
     }
 
     /**
@@ -55,19 +78,37 @@ class ServerContextMenuHandler extends BaseContextMenuHandler {
      * @protected
      */
     _setupEventListeners() {
-        // 設置選單項目的事件處理
-        this.menuItems.addKey.addEventListener('click', () => this.executeMenuFunction('addKey'));
-        this.menuItems.refresh.addEventListener('click', () => this.executeMenuFunction('refresh'));
-        this.menuItems.reconnect.addEventListener('click', () => this.executeMenuFunction('reconnect'));
-        this.menuItems.disconnect.addEventListener('click', () => this.executeMenuFunction('disconnect'));
-        this.menuItems.remove.addEventListener('click', () => this.executeMenuFunction('remove'));
+        // 監聽伺服器節點的右鍵事件
+        this.container.addEventListener('contextmenu', this._handleContextMenu.bind(this));
 
-        // 點擊外部關閉選單
-        document.addEventListener('click', this._handleClickOutsideBound);
+        // 設置選單項目的點擊事件
+        Object.entries(this.menuItems).forEach(([action, item]) => {
+            item.addEventListener('click', () => this.executeMenuFunction(action));
+        });
     }
 
     /**
-     * 顯示特定連線的上下文選單
+     * 處理上下文選單事件
+     * @private
+     * @param {MouseEvent} e - 事件對象
+     */
+    _handleContextMenu(e) {
+        const serverNode = e.target.closest('.server-node');
+        if (!serverNode) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const connectionId = serverNode.getAttribute('data-connection-id');
+        if (connectionId) {
+            this.showForConnection(connectionId, e.clientX, e.clientY);
+        }
+    }
+
+    /**
+     * 顯示指定連線的上下文選單
      * @public
      * @param {string} connectionId - 連線 ID
      * @param {number} x - X 座標
@@ -80,114 +121,71 @@ class ServerContextMenuHandler extends BaseContextMenuHandler {
     }
 
     /**
-     * 執行選單功能
-     * @public
-     * @param {string} action - 動作名稱
-     * @returns {Promise<void>}
-     */
-    async executeMenuFunction(action) {
-        if (!this.currentConnectionId) return;
-
-        try {
-            switch (action) {
-                case 'addKey':
-                    await this._handleAddKey();
-                    break;
-                case 'refresh':
-                    await this._handleRefresh();
-                    break;
-                case 'reconnect':
-                    await this._handleReconnect();
-                    break;
-                case 'disconnect':
-                    await this._handleDisconnect();
-                    break;
-                case 'remove':
-                    await this._handleRemove();
-                    break;
-                default:
-                    throw new Error(`Unknown action: ${action}`);
-            }
-        } catch (error) {
-            this._handleError(error, action);
-        } finally {
-            this.hide();
-        }
-    }
-
-    /**
      * 更新選單項目的可見性
      * @private
      */
     _updateMenuItemsVisibility() {
         const connection = this.redisOperations.connections.get(this.currentConnectionId);
-        if (!connection) return;
+        const isConnected = connection?.status === 'ready';
 
-        const isConnected = connection.status === 'ready';
         this.menuItems.addKey.style.display = isConnected ? 'block' : 'none';
         this.menuItems.refresh.style.display = isConnected ? 'block' : 'none';
         this.menuItems.reconnect.style.display = !isConnected ? 'block' : 'none';
         this.menuItems.disconnect.style.display = isConnected ? 'block' : 'none';
+        this.menuItems.remove.style.display = 'block';
     }
 
     /**
-     * 處理新增鍵值
-     * @private
-     * @returns {Promise<void>}
+     * 執行選單功能
+     * @public
+     * @param {string} action - 動作名稱
      */
-    async _handleAddKey() {
-        const connection = this.redisOperations.connections.get(this.currentConnectionId);
-        if (!connection || connection.status !== 'ready') {
-            throw new Error('伺服器未連線');
-        }
-        // 觸發新增鍵值對話框顯示
-        this.uiStateManager.showAddKeyModal();
-    }
+    async executeMenuFunction(action) {
+        try {
+            const connection = this.redisOperations.connections.get(this.currentConnectionId);
+            const isConnected = connection?.status === 'ready';
 
-    /**
-     * 處理重新整理
-     * @private
-     * @returns {Promise<void>}
-     */
-    async _handleRefresh() {
-        const connection = this.redisOperations.connections.get(this.currentConnectionId);
-        if (!connection || connection.status !== 'ready') {
-            throw new Error('伺服器未連線');
-        }
-        await this.redisOperations.refreshKeys(this.currentConnectionId);
-    }
+            switch (action) {
+                case 'addKey':
+                    if (isConnected) {
+                        this.uiStateManager.showAddKeyModal(this.currentConnectionId);
+                    }
+                    break;
 
-    /**
-     * 處理重新連線
-     * @private
-     * @returns {Promise<void>}
-     */
-    async _handleReconnect() {
-        await this.redisOperations.reconnectToServer(this.currentConnectionId);
-    }
+                case 'refresh':
+                    if (isConnected) {
+                        await this.redisOperations.refreshKeys(this.currentConnectionId);
+                    }
+                    break;
 
-    /**
-     * 處理斷開連線
-     * @private
-     * @returns {Promise<void>}
-     */
-    async _handleDisconnect() {
-        await this.redisOperations.disconnectFromServer(this.currentConnectionId);
-    }
+                case 'reconnect':
+                    await this.redisOperations.reconnectToServer(this.currentConnectionId);
+                    break;
 
-    /**
-     * 處理移除伺服器
-     * @private
-     * @returns {Promise<void>}
-     */
-    async _handleRemove() {
-        const confirmed = await this.uiStateManager.showConfirmDialog(
-            '確認移除伺服器',
-            '是否確定要移除此伺服器？此操作無法復原。'
-        );
-        
-        if (confirmed) {
-            await this.redisOperations.removeServer(this.currentConnectionId);
+                case 'disconnect':
+                    await this.redisOperations.disconnectFromServer(this.currentConnectionId);
+                    break;
+
+                case 'remove':
+                    const confirmed = await this.uiStateManager.showConfirmDialog({
+                        title: '移除伺服器',
+                        message: '確定要移除此伺服器嗎？',
+                        confirmText: '移除',
+                        cancelText: '取消'
+                    });
+
+                    if (confirmed) {
+                        await this.redisOperations.removeServer(this.currentConnectionId);
+                    }
+                    break;
+
+                default:
+                    throw new Error(`Unknown action: ${action}`);
+            }
+
+            this.hide();
+        } catch (error) {
+            this._handleError(error, `executing menu function: ${action}`);
         }
     }
 
@@ -196,10 +194,16 @@ class ServerContextMenuHandler extends BaseContextMenuHandler {
      * @public
      */
     destroy() {
-        // 移除所有選單項目的事件監聽器
-        Object.values(this.menuItems).forEach(item => {
-            item.replaceWith(item.cloneNode(true));
-        });
+        if (this.menuItems) {
+            // 移除所有選單項目的事件監聽器
+            Object.entries(this.menuItems).forEach(([action, item]) => {
+                const newItem = item.cloneNode(true);
+                if (item.parentNode) {
+                    item.parentNode.replaceChild(newItem, item);
+                }
+                this.menuItems[action] = newItem;
+            });
+        }
         super.destroy();
     }
 }

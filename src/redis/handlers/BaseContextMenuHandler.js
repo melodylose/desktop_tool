@@ -15,7 +15,7 @@ class BaseContextMenuHandler {
         this.container = container;
         this.uiStateManager = uiStateManager;
         this.menuElement = null;
-        this._handleClickOutsideBound = this._handleClickOutside.bind(this);
+        this._handleGlobalClickBound = this._handleGlobalClick.bind(this);
     }
 
     /**
@@ -23,9 +23,11 @@ class BaseContextMenuHandler {
      * @public
      */
     initialize() {
-        this.menuElement = this._createMenuElement();
-        this.container.appendChild(this.menuElement);
-        this._setupEventListeners();
+        if (!this.menuElement) {
+            this.menuElement = this._createMenuElement();
+            this.container.appendChild(this.menuElement);
+            this._setupEventListeners();
+        }
     }
 
     /**
@@ -35,24 +37,18 @@ class BaseContextMenuHandler {
      * @param {number} y - Y 座標
      */
     show(x, y) {
-        // 確保選單不會超出視窗範圍
-        const menuRect = this.menuElement.getBoundingClientRect();
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-
-        // 調整 X 座標
-        if (x + menuRect.width > windowWidth) {
-            x = windowWidth - menuRect.width;
+        if (!this.menuElement) {
+            return;
         }
 
-        // 調整 Y 座標
-        if (y + menuRect.height > windowHeight) {
-            y = windowHeight - menuRect.height;
-        }
-
+        const { x: adjustedX, y: adjustedY } = this._adjustMenuPosition(x, y);
+        this.menuElement.style.left = `${adjustedX}px`;
+        this.menuElement.style.top = `${adjustedY}px`;
         this.menuElement.style.display = 'block';
-        this.menuElement.style.left = `${Math.max(0, x)}px`;
-        this.menuElement.style.top = `${Math.max(0, y)}px`;
+
+        // 添加全局事件監聽器
+        window.addEventListener('click', this._handleGlobalClickBound, true);
+        window.addEventListener('contextmenu', this._handleGlobalClickBound, true);
     }
 
     /**
@@ -62,6 +58,8 @@ class BaseContextMenuHandler {
     hide() {
         if (this.menuElement) {
             this.menuElement.style.display = 'none';
+            window.removeEventListener('click', this._handleGlobalClickBound, true);
+            window.removeEventListener('contextmenu', this._handleGlobalClickBound, true);
         }
     }
 
@@ -70,7 +68,7 @@ class BaseContextMenuHandler {
      * @public
      */
     destroy() {
-        document.removeEventListener('click', this._handleClickOutsideBound);
+        this.hide();
         if (this.menuElement && this.menuElement.parentNode) {
             this.menuElement.parentNode.removeChild(this.menuElement);
         }
@@ -97,53 +95,73 @@ class BaseContextMenuHandler {
     }
 
     /**
-     * 處理點擊選單外部的事件
+     * 調整選單位置以避免超出視窗
      * @protected
-     * @param {MouseEvent} event - 滑鼠事件
+     * @param {number} x - X 座標
+     * @param {number} y - Y 座標
+     * @returns {{x: number, y: number}} 調整後的座標
      */
-    _handleClickOutside(event) {
-        if (this.menuElement && !this.menuElement.contains(event.target)) {
-            this.hide();
+    _adjustMenuPosition(x, y) {
+        if (!this.menuElement) {
+            return { x, y };
         }
+
+        const menuRect = this.menuElement.getBoundingClientRect();
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        // 先確保座標不小於 0
+        let adjustedX = Math.max(0, x);
+        let adjustedY = Math.max(0, y);
+
+        // 如果選單會超出右邊界，將其移動到左邊
+        if (adjustedX + menuRect.width > windowWidth) {
+            adjustedX = windowWidth - menuRect.width;
+        }
+
+        // 如果選單會超出下邊界，將其移動到上方
+        if (adjustedY + menuRect.height > windowHeight) {
+            adjustedY = windowHeight - menuRect.height;
+        }
+
+        // 再次確保調整後的座標不小於 0
+        adjustedX = Math.max(0, adjustedX);
+        adjustedY = Math.max(0, adjustedY);
+
+        return { x: adjustedX, y: adjustedY };
     }
 
     /**
-     * 處理錯誤並顯示通知
+     * 處理全局點擊事件
+     * @protected
+     * @param {Event} e - 事件對象
+     */
+    _handleGlobalClick(e) {
+        if (!this.menuElement || this.menuElement.style.display === 'none') {
+            return;
+        }
+
+        // 如果點擊的是選單內部，不處理事件
+        if (this.menuElement.contains(e.target)) {
+            return;
+        }
+
+        // 阻止事件冒泡
+        e.stopPropagation();
+
+        // 隱藏選單
+        this.hide();
+    }
+
+    /**
+     * 處理錯誤
      * @protected
      * @param {Error} error - 錯誤對象
-     * @param {string} action - 執行的動作名稱
+     * @param {string} context - 錯誤上下文
      */
-    _handleError(error, action) {
-        console.error(`Error in ${this.constructor.name} executing ${action}:`, error);
-        this.uiStateManager.showNotification(error.message, 'error');
-    }
-
-    /**
-     * 建立選單項目
-     * @protected
-     * @param {string} id - 項目ID
-     * @param {string} icon - Font Awesome 圖示名稱
-     * @param {string} text - 項目文字
-     * @param {string} [i18nKey] - 國際化鍵值
-     * @returns {HTMLElement} 選單項目元素
-     */
-    _createMenuItem(id, icon, text, i18nKey) {
-        const item = document.createElement('div');
-        item.id = id;
-        item.className = 'context-menu-item';
-        
-        const iconElement = document.createElement('i');
-        iconElement.className = `fas fa-${icon} me-2`;
-        item.appendChild(iconElement);
-
-        const textElement = document.createElement('span');
-        if (i18nKey) {
-            textElement.setAttribute('data-i18n', i18nKey);
-        }
-        textElement.textContent = text;
-        item.appendChild(textElement);
-
-        return item;
+    _handleError(error, context) {
+        console.error(`Error in ${context}:`, error);
+        this.uiStateManager?.showNotification?.(error.message, 'error');
     }
 }
 

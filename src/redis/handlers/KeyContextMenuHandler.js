@@ -142,21 +142,7 @@ class KeyContextMenuHandler extends BaseContextMenuHandler {
      * @returns {Promise<void>}
      */
     async _handleDelete() {
-        const confirmed = await this.uiStateManager.showConfirmDialog(
-            '確認刪除',
-            `是否確定要刪除鍵值 "${this.currentKey}"？此操作無法復原。`
-        );
-
-        if (confirmed) {
-            const connection = this.redisOperations.connections.get(this.currentConnectionId);
-            if (!connection || connection.status !== 'ready') {
-                throw new Error('伺服器未連線');
-            }
-
-            await this.redisOperations.deleteKey(connection.client, this.currentKey);
-            this.uiStateManager.showNotification(`已刪除鍵值 "${this.currentKey}"`, 'success');
-            await this.redisOperations.refreshKeys(this.currentConnectionId);
-        }
+        await this.redisOperations.deleteKey(this.currentKey, this.currentConnectionId);
     }
 
     /**
@@ -165,29 +151,7 @@ class KeyContextMenuHandler extends BaseContextMenuHandler {
      * @returns {Promise<void>}
      */
     async _handleCopy() {
-        const connection = this.redisOperations.connections.get(this.currentConnectionId);
-        if (!connection || connection.status !== 'ready') {
-            throw new Error('伺服器未連線');
-        }
-
-        const keyInfo = await this.redisOperations.getKeyInfo(connection.client, this.currentKey);
-        if (!keyInfo.success) {
-            throw new Error(keyInfo.error || '無法取得鍵值資訊');
-        }
-
-        // 複製到剪貼簿
-        const copyText = JSON.stringify({
-            key: this.currentKey,
-            type: keyInfo.info.type,
-            value: keyInfo.info.value
-        }, null, 2);
-
-        try {
-            await navigator.clipboard.writeText(copyText);
-            this.uiStateManager.showNotification('已複製到剪貼簿', 'success');
-        } catch (error) {
-            throw new Error('無法複製到剪貼簿: ' + error.message);
-        }
+        await this.redisOperations.copyKey(this.currentKey, this.currentConnectionId);
     }
 
     /**
@@ -196,21 +160,9 @@ class KeyContextMenuHandler extends BaseContextMenuHandler {
      * @returns {Promise<void>}
      */
     async _handleRename() {
-        const newKey = await this.uiStateManager.showPromptDialog(
-            '重新命名',
-            '請輸入新的鍵值名稱',
-            this.currentKey
-        );
-
-        if (newKey && newKey !== this.currentKey) {
-            const connection = this.redisOperations.connections.get(this.currentConnectionId);
-            if (!connection || connection.status !== 'ready') {
-                throw new Error('伺服器未連線');
-            }
-
-            await this.redisOperations.renameKey(connection.client, this.currentKey, newKey);
-            this.uiStateManager.showNotification(`已將 "${this.currentKey}" 重新命名為 "${newKey}"`, 'success');
-            await this.redisOperations.refreshKeys(this.currentConnectionId);
+        const newKey = await this.uiStateManager.showDialog('重新命名', '請輸入新的鍵值名稱');
+        if (newKey) {
+            await this.redisOperations.renameKey(this.currentKey, newKey, this.currentConnectionId);
         }
     }
 
@@ -220,36 +172,9 @@ class KeyContextMenuHandler extends BaseContextMenuHandler {
      * @returns {Promise<void>}
      */
     async _handleTTL() {
-        const connection = this.redisOperations.connections.get(this.currentConnectionId);
-        if (!connection || connection.status !== 'ready') {
-            throw new Error('伺服器未連線');
-        }
-
-        const ttl = await this.redisOperations.getTTL(connection.client, this.currentKey);
-        const currentTTL = ttl === -1 ? '' : ttl.toString();
-
-        const newTTL = await this.uiStateManager.showPromptDialog(
-            '設定過期時間',
-            '請輸入過期時間（秒），留空表示永不過期',
-            currentTTL
-        );
-
-        if (newTTL !== null) {  // 使用者沒有取消
-            if (newTTL === '') {
-                // 移除過期時間
-                await this.redisOperations.removeTTL(connection.client, this.currentKey);
-                this.uiStateManager.showNotification(`已移除 "${this.currentKey}" 的過期時間`, 'success');
-            } else {
-                const ttlValue = parseInt(newTTL, 10);
-                if (isNaN(ttlValue) || ttlValue < 0) {
-                    throw new Error('過期時間必須是非負整數');
-                }
-                await this.redisOperations.setTTL(connection.client, this.currentKey, ttlValue);
-                this.uiStateManager.showNotification(
-                    `已設定 "${this.currentKey}" 的過期時間為 ${ttlValue} 秒`,
-                    'success'
-                );
-            }
+        const ttl = await this.uiStateManager.showDialog('設定過期時間', '請輸入過期時間（秒）');
+        if (ttl) {
+            await this.redisOperations.setExpire(this.currentKey, parseInt(ttl), this.currentConnectionId);
         }
     }
 
@@ -259,9 +184,15 @@ class KeyContextMenuHandler extends BaseContextMenuHandler {
      */
     destroy() {
         // 移除所有選單項目的事件監聽器
-        Object.values(this.menuItems).forEach(item => {
-            item.replaceWith(item.cloneNode(true));
-        });
+        if (this.menuItems) {
+            Object.values(this.menuItems).forEach(item => {
+                if (item && item.parentNode) {
+                    const clone = item.cloneNode(true);
+                    item.parentNode.replaceChild(clone, item);
+                }
+            });
+            this.menuItems = {};
+        }
         super.destroy();
     }
 }
