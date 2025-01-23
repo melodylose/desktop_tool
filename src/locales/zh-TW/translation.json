@@ -14,7 +14,8 @@
     "connected": "已連線",
     "disconnected": "已中斷連線",
     "error": "錯誤",
-    "success": "成功"
+    "success": "成功",
+    "confirm": "確定"
   },
   "home": {
     "title": "首頁",
@@ -177,6 +178,7 @@
       "connecting": "連線中...",
       "connected": "已連線",
       "disconnect": "中斷連線",
+      "reconnect": "重新連線",
       "remove": "移除伺服器",
       "refresh": "重新整理",
       "confirmDelete": "確認刪除伺服器",
@@ -191,7 +193,7 @@
       "type": "類型",
       "value": "值",
       "confirmDelete": "確認刪除鍵值",
-      "confirmDeleteMessage": "確定要刪除鍵值 {keyName} 嗎？此操作無法復原。",
+      "confirmDeleteMessage": "確定要刪除鍵值 {{keyName}} 嗎？此操作無法復原。",
       "placeholder": "選擇一個鍵值來查看內容",
       "types": {
         "string": "String",
@@ -200,7 +202,9 @@
         "set": "Set",
         "zset": "Sorted Set"
       },
-      "valueHint": "對於List和Set，請使用JSON陣列格式。對於Hash和Sorted Set，請使用JSON物件格式。"
+      "valueHint": "對於List和Set，請使用JSON陣列格式。對於Hash和Sorted Set，請使用JSON物件格式。",
+      "ttl": "設定過期時間",
+      "ttlMessage": "請輸入過期時間（秒）"
     },
     "statistics": {
       "title": "Key Statistics",

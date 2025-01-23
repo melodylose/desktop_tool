@@ -207,7 +207,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <span data-i18n="redis.keyManagement.confirmDeleteMessage">確定要刪除鍵值 <span id="deleteKeyName" class="fw-bold"></span> 嗎？此操作無法復原。</span>
+                <p data-i18n="redis.keyManagement.confirmDeleteMessage">確定要刪除鍵值 {{keyName}} 嗎？此操作無法復原。</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
@@ -229,8 +229,30 @@
                 <span data-i18n="redis.server.confirmDeleteMessage">確定要刪除此伺服器連線嗎？此操作無法復原。</span>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
+                <button type="button" class="btn btn-secondary" id="cancelServerDeleteBtn" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
                 <button type="button" class="btn btn-danger" id="confirmServerDeleteBtn" data-i18n="redis.keyManagement.delete">刪除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TTL Input Modal -->
+<div class="modal fade" id="ttlInputModal" tabindex="-1" aria-labelledby="ttlInputModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ttlInputModalLabel" data-i18n="redis.keyManagement.ttl">設定過期時間</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="ttlInput" class="form-label" data-i18n="redis.keyManagement.ttlMessage">請輸入過期時間（秒）</label>
+                    <input type="number" class="form-control" id="ttlInput" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmTtlBtn" data-i18n="common.confirm">確定</button>
             </div>
         </div>
     </div>

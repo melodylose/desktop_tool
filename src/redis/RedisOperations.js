@@ -191,16 +191,21 @@ class RedisOperations extends EventEmitter {
 
     async disconnectFromServer(connectionId) {
         try {
+            console.log('Disconnecting from Redis server:', connectionId);
             const connection = this.connections.get(connectionId);
-            if (!connection) {
-                throw new Error('Connection not found');
-            }
-
-            if (connection.client) {
-                console.log('Disconnecting from Redis server:', connectionId);
+            
+            if (connection && connection.client) {
                 await connection.client.disconnect();
-                connection.client.status = 'end';
+                connection.status = 'disconnected';
+                connection.client = null;
+                
+                // 保留連線配置，但更新狀態
                 this._updateConnectionStatus(connectionId, 'disconnected');
+                
+                // 如果是當前連線，清除當前連線 ID
+                if (this.currentConnectionId === connectionId) {
+                    this.currentConnectionId = null;
+                }
             }
             
             return true;
@@ -426,28 +431,37 @@ class RedisOperations extends EventEmitter {
     }
 
     async removeServer(connectionId) {
+        console.log('RedisOperations: Removing server:', connectionId);
+        
         try {
-            console.log('Removing server:', connectionId);
-            
             // 先斷開連線
-            await this.disconnectFromServer(connectionId);
-            
-            // 從連線列表中移除
+            const connection = this.connections.get(connectionId);
+            if (connection && connection.client) {
+                await connection.client.disconnect();
+            }
+
+            // 從 Map 中移除連線
             this.connections.delete(connectionId);
-            
-            // 從配置中移除
             this.connectionConfigs.delete(connectionId);
-            this._saveConnections();
-            
+
             // 如果是當前連線，清除當前連線 ID
             if (this.currentConnectionId === connectionId) {
                 this.currentConnectionId = null;
             }
-            
-            return { success: true };
+
+            // 儲存更新後的連線配置
+            this._saveConnections();
+
+            // 發送連線狀態更新事件
+            this.emit('connection-status', {
+                connectionId,
+                status: 'removed'
+            });
+
+            console.log('RedisOperations: Server removed successfully:', connectionId);
         } catch (error) {
-            console.error('Error removing server:', error);
-            return { success: false, error: error.message };
+            console.error('RedisOperations: Error removing server:', error);
+            throw error;
         }
     }
 
@@ -616,6 +630,36 @@ class RedisOperations extends EventEmitter {
             this.emit('error', { operation: 'type', error: error.message });
             throw error;
         }
+    }
+
+    /**
+     * 設定鍵值的過期時間
+     * @param {string} key - 鍵值名稱
+     * @param {number} seconds - 過期時間（秒）
+     * @param {string} [connectionId] - Redis 連線 ID，如果未指定則使用當前連線
+     * @returns {Promise<boolean>} - 設定是否成功
+     * @throws {Error} - 如果連線不存在或操作失敗
+     */
+    async setExpire(key, seconds, connectionId) {
+        const client = this._getClient(connectionId);
+        if (!client) {
+            throw new Error('Redis connection not found');
+        }
+
+        try {
+            const result = await client.expire(key, seconds);
+            return result === 1;
+        } catch (error) {
+            console.error('Error setting expire:', error);
+            throw error;
+        }
+    }
+
+    _getClient(connectionId) {
+        if (connectionId) {
+            return this.connections.get(connectionId)?.client;
+        }
+        return this.currentConnection?.client;
     }
 }
 

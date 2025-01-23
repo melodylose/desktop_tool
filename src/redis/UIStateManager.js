@@ -40,17 +40,58 @@ class UIStateManager {
     }
 
     showNotification(message, type = 'info') {
-        const { ipcRenderer } = require('electron');
         const titles = {
-            'error': '錯誤',
-            'success': '成功',
-            'info': '提示',
-            'warning': '警告'
+            success: '成功',
+            error: '錯誤',
+            warning: '警告',
+            info: '提示'
         };
-        ipcRenderer.send('show-notification', {
-            title: titles[type] || titles.info,
-            body: message
+
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        toast.innerHTML = `
+            <div class="toast-header">
+                <strong class="me-auto">${titles[type] || titles.info}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+
+        const toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            const container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(container);
+        }
+
+        document.getElementById('toastContainer').appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+
+        toast.addEventListener('hidden.bs.toast', () => {
+            toast.remove();
         });
+    }
+
+    /**
+     * 設置確認按鈕事件
+     */
+    handleConfirm() {
+        const confirmBtn = document.getElementById('confirmBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+                if (modal) {
+                    modal.hide();
+                }
+            });
+        }
     }
 }
 

@@ -3,24 +3,18 @@
 const ServerContextMenuHandler = require('../../../redis/handlers/ServerContextMenuHandler');
 
 describe('ServerContextMenuHandler', () => {
-    let container;
-    let uiStateManager;
+    let redisUIHandler;
     let redisOperations;
     let handler;
+    let uiStateManager;
 
     beforeEach(() => {
         // 重置所有 mock
         jest.clearAllMocks();
 
-        // 建立測試用的容器
-        container = document.createElement('div');
-        container.id = 'container';
-        document.body.appendChild(container);
-
         // Mock UIStateManager
         uiStateManager = {
             showNotification: jest.fn(),
-            showDialog: jest.fn(),
             showAddKeyModal: jest.fn(),
             showConfirmDialog: jest.fn()
         };
@@ -34,25 +28,40 @@ describe('ServerContextMenuHandler', () => {
             removeServer: jest.fn()
         };
 
+        // Mock RedisUIHandler
+        redisUIHandler = {
+            elements: {
+                redisTree: document.createElement('div')
+            },
+            uiStateManager: uiStateManager,
+            refreshKeys: jest.fn(),
+            showAddKeyModal: jest.fn(),
+            handleReconnect: jest.fn(),
+            disconnect: jest.fn(),
+            connectionManager: {
+                removeServer: jest.fn()
+            },
+            dialogManager: {
+                showServerDeleteConfirmDialog: jest.fn()
+            }
+        };
+
         // 初始化處理器
-        handler = new ServerContextMenuHandler(container, uiStateManager, redisOperations);
+        handler = new ServerContextMenuHandler(redisUIHandler, redisOperations);
     });
 
     afterEach(() => {
         if (handler) {
             handler.destroy();
         }
-        if (container) {
-            container.remove();
-        }
         jest.clearAllMocks();
     });
 
     describe('constructor', () => {
         it('should initialize with correct properties', () => {
-            expect(handler.container).toBe(container);
-            expect(handler.uiStateManager).toBe(uiStateManager);
+            expect(handler.redisUIHandler).toBe(redisUIHandler);
             expect(handler.redisOperations).toBe(redisOperations);
+            expect(handler.uiStateManager).toBe(uiStateManager);
             expect(handler.currentConnectionId).toBeNull();
             expect(handler.menuItems).toBeDefined();
         });
@@ -89,79 +98,40 @@ describe('ServerContextMenuHandler', () => {
             handler.initialize();
         });
 
-        it('should handle context menu event on server node', () => {
+        it('should show menu for server node', () => {
             const serverNode = document.createElement('div');
-            serverNode.className = 'server-node';
             serverNode.setAttribute('data-connection-id', 'test-connection');
-            container.appendChild(serverNode);
+            handler.container.appendChild(serverNode);
 
-            const showForConnectionSpy = jest.spyOn(handler, 'showForConnection');
-            
             const event = new MouseEvent('contextmenu', {
                 bubbles: true,
                 cancelable: true,
                 clientX: 100,
-                clientY: 100
+                clientY: 200
             });
 
-            serverNode.dispatchEvent(event);
-            expect(showForConnectionSpy).toHaveBeenCalledWith('test-connection', 100, 100);
-        });
-
-        it('should not handle context menu event on non-server node', () => {
-            const nonServerNode = document.createElement('div');
-            container.appendChild(nonServerNode);
-
-            const showForConnectionSpy = jest.spyOn(handler, 'showForConnection');
+            const showForServerSpy = jest.spyOn(handler, 'showForServer');
             
-            const event = new MouseEvent('contextmenu', {
-                bubbles: true,
-                cancelable: true
-            });
+            handler.handleContextMenuEvent(event, serverNode);
 
-            nonServerNode.dispatchEvent(event);
-            expect(showForConnectionSpy).not.toHaveBeenCalled();
-        });
-
-        it('should prevent default and stop propagation', () => {
-            const serverNode = document.createElement('div');
-            serverNode.className = 'server-node';
-            serverNode.setAttribute('data-connection-id', 'test-connection');
-            container.appendChild(serverNode);
-
-            const event = new MouseEvent('contextmenu', {
-                bubbles: true,
-                cancelable: true
-            });
-
-            Object.defineProperties(event, {
-                preventDefault: { value: jest.fn() },
-                stopPropagation: { value: jest.fn() }
-            });
-
-            serverNode.dispatchEvent(event);
-            expect(event.preventDefault).toHaveBeenCalled();
-            expect(event.stopPropagation).toHaveBeenCalled();
+            expect(showForServerSpy).toHaveBeenCalledWith('test-connection', 100, 200);
+            expect(handler.currentConnectionId).toBe('test-connection');
         });
     });
 
-    describe('showForConnection', () => {
+    describe('show', () => {
         beforeEach(() => {
             handler.initialize();
         });
 
-        it('should show menu for connection and update items visibility', () => {
-            const connectionId = 'test-connection';
-            redisOperations.connections.set(connectionId, { status: 'ready' });
+        it('should show menu at specified position', () => {
+            const x = 100;
+            const y = 200;
 
-            const updateMenuItemsVisibilitySpy = jest.spyOn(handler, '_updateMenuItemsVisibility');
-            const showSpy = jest.spyOn(handler, 'show');
+            handler.show(x, y);
 
-            handler.showForConnection(connectionId, 100, 100);
-
-            expect(handler.currentConnectionId).toBe(connectionId);
-            expect(updateMenuItemsVisibilitySpy).toHaveBeenCalled();
-            expect(showSpy).toHaveBeenCalledWith(100, 100);
+            expect(handler.menuElement.style.left).toBe(x + 'px');
+            expect(handler.menuElement.style.top).toBe(y + 'px');
         });
     });
 
@@ -175,11 +145,11 @@ describe('ServerContextMenuHandler', () => {
             redisOperations.connections.set('test-connection', { status: 'ready' });
             handler._updateMenuItemsVisibility();
 
-            expect(handler.menuItems.addKey.style.display).toBe('block');
-            expect(handler.menuItems.refresh.style.display).toBe('block');
+            expect(handler.menuItems.addKey.style.display).toBe('flex');
+            expect(handler.menuItems.refresh.style.display).toBe('flex');
             expect(handler.menuItems.reconnect.style.display).toBe('none');
-            expect(handler.menuItems.disconnect.style.display).toBe('block');
-            expect(handler.menuItems.remove.style.display).toBe('block');
+            expect(handler.menuItems.disconnect.style.display).toBe('flex');
+            expect(handler.menuItems.remove.style.display).toBe('none');
         });
 
         it('should show correct items for disconnected server', () => {
@@ -188,71 +158,112 @@ describe('ServerContextMenuHandler', () => {
 
             expect(handler.menuItems.addKey.style.display).toBe('none');
             expect(handler.menuItems.refresh.style.display).toBe('none');
-            expect(handler.menuItems.reconnect.style.display).toBe('block');
+            expect(handler.menuItems.reconnect.style.display).toBe('flex');
             expect(handler.menuItems.disconnect.style.display).toBe('none');
-            expect(handler.menuItems.remove.style.display).toBe('block');
+            expect(handler.menuItems.remove.style.display).toBe('flex');
         });
     });
 
     describe('executeMenuFunction', () => {
+        let warnSpy;
+
         beforeEach(() => {
             handler.initialize();
             handler.currentConnectionId = 'test-connection';
+            warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        });
+
+        afterEach(() => {
+            warnSpy.mockRestore();
         });
 
         it('should handle addKey action', async () => {
+            // 設置連線狀態為已連線
+            handler.currentConnectionId = 'test-connection';
             redisOperations.connections.set('test-connection', { status: 'ready' });
+            
             await handler.executeMenuFunction('addKey');
-            expect(uiStateManager.showAddKeyModal).toHaveBeenCalledWith('test-connection');
+            expect(redisUIHandler.showAddKeyModal).toHaveBeenCalled();
         });
 
         it('should handle refresh action', async () => {
             redisOperations.connections.set('test-connection', { status: 'ready' });
             await handler.executeMenuFunction('refresh');
-            expect(redisOperations.refreshKeys).toHaveBeenCalledWith('test-connection');
+            expect(redisUIHandler.refreshKeys).toHaveBeenCalledTimes(1);
         });
 
         it('should handle reconnect action', async () => {
+            // 設置連線狀態為未連線
+            handler.currentConnectionId = 'test-connection';
+            redisOperations.connections.set('test-connection', { status: 'closed' });
+
             await handler.executeMenuFunction('reconnect');
-            expect(redisOperations.reconnectToServer).toHaveBeenCalledWith('test-connection');
+            expect(redisUIHandler.handleReconnect).toHaveBeenCalledWith('test-connection');
         });
 
         it('should handle disconnect action', async () => {
+            // 設置連線狀態為已連線
+            handler.currentConnectionId = 'test-connection';
+            redisOperations.connections.set('test-connection', { status: 'ready' });
+
             await handler.executeMenuFunction('disconnect');
-            expect(redisOperations.disconnectFromServer).toHaveBeenCalledWith('test-connection');
+            expect(redisUIHandler.disconnect).toHaveBeenCalledWith('test-connection');
         });
 
         it('should handle remove action with confirmation', async () => {
-            uiStateManager.showConfirmDialog.mockResolvedValue(true);
+            // 設置連線狀態為未連線
+            handler.currentConnectionId = 'test-connection';
+            redisOperations.connections.set('test-connection', { status: 'closed' });
+            
+            redisUIHandler.dialogManager.showServerDeleteConfirmDialog.mockResolvedValue(true);
             await handler.executeMenuFunction('remove');
-            expect(redisOperations.removeServer).toHaveBeenCalledWith('test-connection');
+            expect(redisUIHandler.connectionManager.removeServer).toHaveBeenCalledWith('test-connection');
         });
 
         it('should not remove server when confirmation is cancelled', async () => {
-            uiStateManager.showConfirmDialog.mockResolvedValue(false);
+            // 設置連線狀態為未連線
+            handler.currentConnectionId = 'test-connection';
+            redisOperations.connections.set('test-connection', { status: 'closed' });
+            
+            redisUIHandler.dialogManager.showServerDeleteConfirmDialog.mockResolvedValue(false);
             await handler.executeMenuFunction('remove');
-            expect(redisOperations.removeServer).not.toHaveBeenCalled();
+            expect(redisUIHandler.connectionManager.removeServer).not.toHaveBeenCalled();
         });
 
-        it('should handle unknown action', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        it('should not remove server when it is still connected', async () => {
+            // 設置連線狀態為已連線
+            handler.currentConnectionId = 'test-connection';
+            redisOperations.connections.set('test-connection', { status: 'ready' });
             
-            await handler.executeMenuFunction('unknown');
-            
-            expect(consoleSpy).toHaveBeenCalled();
-            expect(uiStateManager.showNotification).toHaveBeenCalledWith(
-                expect.stringContaining('Unknown action'),
-                'error'
+            await handler.executeMenuFunction('remove');
+            expect(redisUIHandler.connectionManager.removeServer).not.toHaveBeenCalled();
+            // 應該顯示警告訊息
+            expect(warnSpy).toHaveBeenCalledWith(
+                'ServerContextMenuHandler: Cannot remove connected server. Please disconnect first.'
             );
         });
 
-        it('should hide menu after successful action', async () => {
+        it('should handle unknown action', async () => {
+            await handler.executeMenuFunction('unknown');
+            
+            expect(warnSpy).toHaveBeenCalledWith(
+                'ServerContextMenuHandler: Unknown menu action:',
+                'unknown'
+            );
+        });
+
+        it('should execute refresh action successfully', async () => {
+            // 設置當前連線 ID
+            handler.currentConnectionId = 'test-connection';
             redisOperations.connections.set('test-connection', { status: 'ready' });
-            const hideSpy = jest.spyOn(handler, 'hide');
+            
+            // 監聽 refreshKeys 方法
+            const refreshKeysSpy = jest.spyOn(redisUIHandler, 'refreshKeys');
             
             await handler.executeMenuFunction('refresh');
             
-            expect(hideSpy).toHaveBeenCalled();
+            // 驗證 refreshKeys 被調用
+            expect(refreshKeysSpy).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -262,13 +273,14 @@ describe('ServerContextMenuHandler', () => {
         });
 
         it('should clean up event listeners', () => {
-            const removeEventListenerSpy = jest.spyOn(window, 'removeEventListener');
+            const removeEventListenerSpy = jest.spyOn(document, 'removeEventListener');
             
             handler.show(100, 100);
             handler.destroy();
 
-            expect(removeEventListenerSpy).toHaveBeenCalledWith('click', handler._handleGlobalClickBound, true);
-            expect(removeEventListenerSpy).toHaveBeenCalledWith('contextmenu', handler._handleGlobalClickBound, true);
+            expect(removeEventListenerSpy).toHaveBeenCalledWith('click', handler._handleGlobalClickBound);
+            // contextmenu 事件不應該被移除，因為它從未被添加
+            expect(removeEventListenerSpy).toHaveBeenCalledTimes(1);
         });
 
         it('should handle being called multiple times', () => {

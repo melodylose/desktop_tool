@@ -14,7 +14,8 @@
     "connected": "Connected",
     "disconnected": "Disconnected",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "confirm": "Confirm"
   },
   "home": {
     "title": "Home",
@@ -174,6 +175,7 @@
       "disconnect": "Disconnect",
       "remove": "Remove Server",
       "refresh": "Refresh",
+      "reconnect": "Reconnect",
       "confirmDelete": "Confirm Server Deletion",
       "confirmDeleteMessage": "Are you sure you want to delete this server connection? This action cannot be undone."
     },
@@ -186,7 +188,7 @@
       "type": "Type",
       "value": "Value",
       "confirmDelete": "Confirm Key Deletion",
-      "confirmDeleteMessage": "Are you sure you want to delete the key {keyName}? This action cannot be undone.",
+      "confirmDeleteMessage": "Are you sure you want to delete the key {{keyName}}? This action cannot be undone.",
       "placeholder": "Select a key to view its content",
       "types": {
         "string": "String",
@@ -195,7 +197,9 @@
         "set": "Set",
         "zset": "Sorted Set"
       },
-      "valueHint": "For Lists and Sets, use JSON array format. For Hashes and Sorted Sets, use JSON object format."
+      "valueHint": "For Lists and Sets, use JSON array format. For Hashes and Sorted Sets, use JSON object format.",
+      "ttl": "Set Expiration Time",
+      "ttlMessage": "Enter expiration time (seconds)"
     },
     "statistics": {
       "title": "Key Statistics",

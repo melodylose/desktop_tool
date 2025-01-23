@@ -59,8 +59,11 @@ class ConnectionManager {
         if (this.connections.has(connectionId)) {
             const connection = this.connections.get(connectionId);
             try {
-                await this.redisOperations.disconnect(connection.client);
-                this.removeConnection(connectionId);
+                await this.redisOperations.disconnectFromServer(connectionId);
+                // 不要移除連線，只是更新狀態
+                if (connectionId === this.currentConnection) {
+                    this.currentConnection = null;
+                }
                 return { success: true };
             } catch (error) {
                 console.error('Disconnect error:', error);
@@ -72,6 +75,7 @@ class ConnectionManager {
 
     removeConnection(connectionId) {
         if (this.connections.has(connectionId)) {
+            // 只在移除時才真正刪除連線
             this.connections.delete(connectionId);
             if (connectionId === this.currentConnection) {
                 this.currentConnection = null;
@@ -113,6 +117,37 @@ class ConnectionManager {
         }
         console.log('Connection not found in ConnectionManager');
         return false;
+    }
+
+    /**
+     * 移除伺服器連線
+     * @param {string} connectionId - 連線 ID
+     * @returns {Promise<{success: boolean, error?: string}>} - 操作結果
+     */
+    async removeServer(connectionId) {
+        try {
+            // 先斷開連線
+            const disconnectResult = await this.disconnect(connectionId);
+            if (!disconnectResult.success) {
+                return disconnectResult;
+            }
+
+            // 從 RedisOperations 中移除連線
+            await this.redisOperations.removeServer(connectionId);
+            
+            // 同步連線狀態
+            this._syncConnections();
+            
+            return { success: true };
+        } catch (error) {
+            console.error('Remove server error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    getCurrentConnection() {
+        if (!this.currentConnection) return null;
+        return this.connections.get(this.currentConnection);
     }
 }
 

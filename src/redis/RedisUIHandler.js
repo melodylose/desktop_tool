@@ -2,6 +2,9 @@ const { ipcRenderer } = require('electron');
 const UIStateManager = require('./UIStateManager');
 const TreeViewBuilder = require('./TreeViewBuilder');
 const ConnectionManager = require('./ConnectionManager');
+const ServerContextMenuHandler = require('./handlers/ServerContextMenuHandler');
+const KeyContextMenuHandler = require('./handlers/KeyContextMenuHandler');
+const DialogManager = require('./dialogs/DialogManager');
 
 class RedisUIHandler {
     constructor(redisOperations) {
@@ -11,6 +14,8 @@ class RedisUIHandler {
         this.addKeyModal = null;
         this.ipcRenderer = ipcRenderer;
         this.initialized = false;
+        this.serverContextMenuHandler = null;
+        this.keyContextMenuHandler = null;
 
         this.connectionManager = new ConnectionManager(redisOperations);
         
@@ -30,9 +35,10 @@ class RedisUIHandler {
         try {
             this._initializeElements();
             this.uiStateManager = new UIStateManager(this.elements);
+            this.dialogManager = new DialogManager(this.uiStateManager);
             this.treeViewBuilder = new TreeViewBuilder(this.elements.redisTree);
             this._initializeEventListeners();
-            this._setupContextMenu();
+            this._initializeContextMenuHandlers();
 
             // 重新構建現有連線的樹狀視圖
             console.log('Updating initial tree view...');
@@ -81,24 +87,22 @@ class RedisUIHandler {
             // Stream content elements
             streamContent: document.getElementById('streamContent'),
             streamEntries: document.getElementById('streamEntries'),
-            // 其他元素
-            serverContextMenu: document.getElementById('serverContextMenu'),
-            addKeyMenuItem: document.getElementById('addKeyMenuItem'),
-            refreshMenuItem: document.getElementById('refreshMenuItem'),
-            disconnectMenuItem: document.getElementById('disconnectMenuItem'),
-            removeServerMenuItem: document.getElementById('removeServerMenuItem'),
             // modal 元素
             addKeyModal: document.getElementById('addKeyModal'),
             addServerModal: document.getElementById('addServerModal'),
             keyContentForm: document.getElementById('keyContentForm'),
-            keyContentPlaceholder: document.getElementById('keyContentPlaceholder')
+            keyContentPlaceholder: document.getElementById('keyContentPlaceholder'),
+            // 刪除確認對話框元素
+            deleteConfirmModal: document.getElementById('deleteConfirmModal'),
+            deleteKeyName: document.getElementById('deleteKeyName'),
+            confirmDeleteBtn: document.getElementById('confirmDeleteBtn')
         };
 
         // 檢查必要的元素是否存在
         const requiredElements = [
             'addServerBtn', 'connectBtn', 'serverName', 'redisServer', 'redisPort',
             'redisDb', 'addKeyBtn', 'deleteKeyBtn', 'saveExistingKeyBtn', 'saveNewKeyBtn',
-            'redisTree', 'keyContent', 'serverContextMenu', 'keyName', 'keyType', 'keyValue',
+            'redisTree', 'keyContent', 'keyName', 'keyType', 'keyValue',
             'newKeyName', 'newKeyType', 'newKeyValue', 'addKeyModal', 'keyContentForm',
             'keyContentPlaceholder', 'streamContent', 'streamEntries'
         ];
@@ -119,7 +123,6 @@ class RedisUIHandler {
         
         this._initWindowEvents();
         this._initButtonEvents();
-        this._initMenuEvents();
         this._initTreeEvents();
     }
 
@@ -148,20 +151,6 @@ class RedisUIHandler {
             e.preventDefault();
             this.saveExistingKey();
         });
-    }
-
-    _initMenuEvents() {
-        const elements = this.elements;
-        
-        // Context menu items
-        elements.addKeyMenuItem.addEventListener('click', () => this.showAddKeyModal());
-        elements.refreshMenuItem.addEventListener('click', () => this.refreshKeys());
-        elements.disconnectMenuItem.addEventListener('click', () => this.disconnect());
-        elements.removeServerMenuItem.addEventListener('click', () => this.removeServer());
-
-        // Global context menu handling
-        document.addEventListener('click', () => this.hideContextMenu());
-        elements.redisTree.addEventListener('contextmenu', e => this.showContextMenu(e));
     }
 
     _initTreeEvents() {
@@ -206,13 +195,34 @@ class RedisUIHandler {
 
     _handleKeyClick(event) {
         const keyNode = event.target.closest('.key-node');
+        console.log('RedisUIHandler: Key click event', {
+            target: event.target,
+            keyNode: keyNode,
+            button: event.button,
+            isRightClick: event.button === 2
+        });
+
         if (!keyNode) return;
+
+        // 如果是右鍵點擊，則不進行選擇操作
+        if (event.button === 2) {
+            console.log('RedisUIHandler: Right click detected, skipping selection');
+            return;
+        }
 
         this.elements.keyStatistics.style.display = 'none';
         const keyName = keyNode.querySelector('.key-name')?.textContent;
         const connectionId = keyNode.closest('.server-node')?.getAttribute('data-connection-id');
         
+        console.log('RedisUIHandler: Key node data', {
+            keyName,
+            connectionId,
+            hasKeyName: !!keyName,
+            hasConnectionId: !!connectionId
+        });
+        
         if (keyName && connectionId) {
+            console.log('RedisUIHandler: Handling key selection', keyName);
             this.handleKeySelect(keyName, connectionId);
         }
     }
@@ -967,111 +977,24 @@ class RedisUIHandler {
         const keyName = selectedNode.querySelector('.key-name')?.textContent;
         if (!keyName) return;
 
-        const deleteModal = this._setupDeleteModal(keyName);
-        if (!deleteModal) return;
+        const confirmed = await this.dialogManager.showDeleteConfirmDialog(keyName);
+        if (!confirmed) return;
 
-        const confirmBtn = document.getElementById('confirmDeleteBtn');
-        this._setupDeleteConfirmation(confirmBtn, keyName, deleteModal);
-        
-        deleteModal.show();
-    }
-
-    _setupDeleteModal(keyName) {
-        const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-        const deleteKeyNameElement = document.getElementById('deleteKeyName');
-        
-        if (!deleteKeyNameElement) {
-            this.uiStateManager.showNotification('無法顯示刪除確認對話框');
-            return null;
-        }
-
-        deleteKeyNameElement.textContent = keyName;
-        return deleteModal;
-    }
-
-    _setupDeleteConfirmation(confirmBtn, keyName, modal) {
-        // Clean up old event listener
-        if (confirmBtn.handleDelete) {
-            confirmBtn.removeEventListener('click', confirmBtn.handleDelete);
-        }
-
-        const handleDelete = async () => {
-            try {
-                const currentConnection = this.connectionManager.getCurrentConnection();
-                if (!currentConnection?.client) {
-                    throw new Error('沒有可用的連線');
-                }
-
-                const result = await this.redisOperations.deleteKey(currentConnection.client, keyName);
-                
-                if (result.success) {
-                    await this.refreshKeys();
-                    this.resetKeyContent();
-                    this.uiStateManager.showNotification('鍵值已刪除', 'success');
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                this.uiStateManager.showNotification('刪除失敗: ' + error.message, 'error');
-            } finally {
-                modal.hide();
-                confirmBtn.removeEventListener('click', handleDelete);
-                delete confirmBtn.handleDelete;
-            }
-        };
-
-        confirmBtn.handleDelete = handleDelete;
-        confirmBtn.addEventListener('click', handleDelete);
-    }
-
-    async removeServer() {
-        if (!this.selectedConnectionId) {
-            console.error('No server selected');
-            return;
-        }
-
-        this._showServerDeleteConfirmDialog();
-    }
-
-    _showServerDeleteConfirmDialog() {
-        const deleteModal = new bootstrap.Modal(document.getElementById('serverDeleteConfirmModal'));
-        const confirmDeleteBtn = document.getElementById('confirmServerDeleteBtn');
-        
-        confirmDeleteBtn.addEventListener('click', () => this._handleServerDeletion(deleteModal));
-        deleteModal.show();
-    }
-
-    async _handleServerDeletion(deleteModal) {
         try {
-            deleteModal.hide();
-            const result = await this.redisOperations.removeServer(this.selectedConnectionId);
-            
+            const currentConnection = this.connectionManager.getCurrentConnection();
+            if (!currentConnection || !currentConnection.client) {
+                throw new Error('沒有可用的連線');
+            }
+
+            const result = await this.redisOperations.deleteKey(currentConnection.client, keyName);
             if (result.success) {
-                this._handleSuccessfulDeletion();
+                await this.refreshKeys();
+                this.uiStateManager.showNotification('鍵值已刪除', 'success');
             } else {
-                this.uiStateManager.showNotification('移除伺服器失敗: ' + result.error, 'error');
+                throw new Error(result.error || '刪除鍵值失敗');
             }
         } catch (error) {
-            console.error('Error removing server:', error);
-            this.uiStateManager.showNotification('移除伺服器時發生錯誤: ' + error.message, 'error');
-        }
-    }
-
-    _handleSuccessfulDeletion() {
-        this.updateTree();
-        this.uiStateManager.showNotification('伺服器已移除', 'success');
-        this.uiStateManager.showNormalState();
-        this.selectedConnectionId = null;
-        this._resetKeyContentArea();
-    }
-
-    _resetKeyContentArea() {
-        const placeholder = document.getElementById('keyContentPlaceholder');
-        const form = document.getElementById('keyContentForm');
-        
-        if (placeholder && form) {
-            placeholder.style.display = 'block';
-            form.style.display = 'none';
+            this.uiStateManager.showNotification(error.message, 'error');
         }
     }
 
@@ -1134,131 +1057,66 @@ class RedisUIHandler {
         }
     }
 
-    showContextMenu(event) {
-        event.preventDefault();
-        
-        // 找到最近的伺服器節點
-        const serverNode = event.target.closest('.server-node');
-        if (!serverNode) return;
-        
-        // 保存選中的連線 ID
-        this.selectedConnectionId = serverNode.getAttribute('data-connection-id');
-        
-        // 設置選單位置
-        const menu = this.elements.serverContextMenu;
-        menu.style.display = 'block';
-        menu.style.left = `${event.pageX}px`;
-        menu.style.top = `${event.pageY}px`;
-        
-        // 防止選單超出視窗
-        const menuRect = menu.getBoundingClientRect();
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-        
-        if (menuRect.right > windowWidth) {
-            menu.style.left = `${windowWidth - menuRect.width}px`;
-        }
-        if (menuRect.bottom > windowHeight) {
-            menu.style.top = `${windowHeight - menuRect.height}px`;
-        }
-    }
-
-    hideContextMenu() {
-        if (this.elements.serverContextMenu) {
-            this.elements.serverContextMenu.style.display = 'none';
-        }
-    }
-
-    _setupContextMenu() {
-        this._createReconnectMenuItem();
-        this._setupContextMenuEventListeners();
-    }
-
-    _createReconnectMenuItem() {
-        const reconnectMenuItem = document.createElement('a');
-        reconnectMenuItem.className = 'dropdown-item';
-        reconnectMenuItem.href = '#';
-        reconnectMenuItem.innerHTML = '<i class="fas fa-plug-circle-check me-2"></i>重新連線';
-        reconnectMenuItem.style.display = 'none';
-        
-        this.elements.disconnectMenuItem.parentNode.insertBefore(
-            reconnectMenuItem, 
-            this.elements.disconnectMenuItem
+    /**
+     * 初始化上下文選單處理器
+     * @private
+     */
+    _initializeContextMenuHandlers() {
+        console.log('RedisUIHandler: Setting up context menus...');
+        // 初始化伺服器上下文選單處理器
+        this.serverContextMenuHandler = new ServerContextMenuHandler(
+            this,  // Pass the RedisUIHandler instance
+            this.redisOperations
         );
-        this.elements.reconnectMenuItem = reconnectMenuItem;
+        this.serverContextMenuHandler.initialize();
+        console.log('RedisUIHandler: Server context menu initialized');
+        
+        // 初始化鍵值上下文選單處理器
+        this.keyContextMenuHandler = new KeyContextMenuHandler(
+            this,  // Pass the RedisUIHandler instance
+            this.redisOperations
+        );
+        this.keyContextMenuHandler.initialize();
+        console.log('RedisUIHandler: Key context menu initialized');
+
+        // 在 RedisUIHandler 層級處理上下文選單事件
+        this.elements.redisTree.addEventListener('contextmenu', (event) => {
+            const keyNode = event.target.closest('.key-node');
+            const serverNode = event.target.closest('.server-node');
+
+            // 防止事件冒泡和預設行為
+            event.preventDefault();
+            event.stopPropagation();
+
+            // 如果點擊的是鍵值節點，顯示鍵值上下文選單
+            if (keyNode) {
+                console.log('RedisUIHandler: Handling key context menu');
+                this.keyContextMenuHandler.handleContextMenuEvent(event, keyNode);
+                return;
+            }
+
+            // 如果點擊的是伺服器節點（但不是鍵值節點），顯示伺服器上下文選單
+            if (serverNode && !keyNode) {
+                console.log('RedisUIHandler: Handling server context menu');
+                this.serverContextMenuHandler.handleContextMenuEvent(event, serverNode);
+                return;
+            }
+        });
+
+        console.log('RedisUIHandler: Context menus initialized');
     }
 
-    _setupContextMenuEventListeners() {
-        document.addEventListener('contextmenu', (e) => this._handleContextMenu(e));
-        document.addEventListener('click', () => this._hideContextMenu());
-    }
-
-    _handleContextMenu(e) {
-        const serverNode = e.target.closest('.server-node');
-        if (!serverNode) return;
-        
-        e.preventDefault();
-        
-        const connectionId = serverNode.getAttribute('data-connection-id');
-        const connection = this.redisOperations.connections.get(connectionId);
-        
-        if (connection) {
-            const statusIndicator = serverNode.querySelector('.connection-status');
-            this._updateMenuItemsVisibility(statusIndicator, connectionId);
+    /**
+     * 銷毀處理器
+     */
+    destroy() {
+        if (this.serverContextMenuHandler) {
+            this.serverContextMenuHandler.destroy();
         }
-
-        this._showContextMenu(e.pageX, e.pageY);
-    }
-
-    _updateMenuItemsVisibility(statusIndicator, connectionId) {
-        const hasDisconnectedClass = statusIndicator && 
-            (statusIndicator.classList.contains('disconnected') || 
-             statusIndicator.classList.contains('error'));
-        const hasConnectedClass = statusIndicator && 
-            statusIndicator.classList.contains('connected');
-
-        console.log('Status indicator classes:', statusIndicator ? statusIndicator.className : 'not found');
-        
-        const divider = document.querySelector('#serverContextMenu .dropdown-divider');
-        
-        if (hasDisconnectedClass) {
-            this._showDisconnectedMenuItems(connectionId);
-            divider.style.display = 'none';
-        } else if (hasConnectedClass) {
-            this._showConnectedMenuItems(connectionId);
-            divider.style.display = 'block';
+        if (this.keyContextMenuHandler) {
+            this.keyContextMenuHandler.destroy();
         }
-    }
-
-    _showDisconnectedMenuItems(connectionId) {
-        this.elements.reconnectMenuItem.style.display = 'block';
-        this.elements.reconnectMenuItem.onclick = () => this.handleReconnect(connectionId);
-        
-        this.elements.addKeyMenuItem.style.display = 'none';
-        this.elements.refreshMenuItem.style.display = 'none';
-        this.elements.disconnectMenuItem.style.display = 'none';
-    }
-
-    _showConnectedMenuItems(connectionId) {
-        this.elements.reconnectMenuItem.style.display = 'none';
-        
-        this.elements.addKeyMenuItem.style.display = 'block';
-        this.elements.refreshMenuItem.style.display = 'block';
-        this.elements.disconnectMenuItem.style.display = 'block';
-        
-        this.elements.disconnectMenuItem.onclick = () => this.handleDisconnect(connectionId);
-        this.elements.refreshMenuItem.onclick = () => this.updateTree();
-        this.elements.addKeyMenuItem.onclick = () => console.log('Add key clicked');
-    }
-
-    _showContextMenu(x, y) {
-        this.elements.serverContextMenu.style.display = 'block';
-        this.elements.serverContextMenu.style.left = x + 'px';
-        this.elements.serverContextMenu.style.top = y + 'px';
-    }
-
-    _hideContextMenu() {
-        this.elements.serverContextMenu.style.display = 'none';
+        // 其他清理工作...
     }
 }
 

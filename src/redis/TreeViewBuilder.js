@@ -183,14 +183,25 @@ class TreeViewBuilder {
     }
 
     bindKeyNodeEvents(onKeySelect, container = null) {
-        console.log('Binding key node events...');
+        console.log('TreeViewBuilder: Binding key node events...');
         const targetContainer = container || this.treeContainer;
         const keyNodes = targetContainer.querySelectorAll('.key-node');
-        console.log('Found key nodes:', keyNodes.length);
+        console.log('TreeViewBuilder: Found key nodes:', keyNodes.length);
         
         keyNodes.forEach(keyNode => {
-            keyNode.addEventListener('click', () => {
-                console.log('Key node clicked');
+            keyNode.addEventListener('click', (event) => {
+                console.log('TreeViewBuilder: Key node clicked', {
+                    target: event.target,
+                    button: event.button,
+                    isRightClick: event.button === 2
+                });
+
+                // 如果是右鍵點擊，則不進行選擇操作
+                if (event.button === 2) {
+                    console.log('TreeViewBuilder: Right click detected, skipping selection');
+                    return;
+                }
+
                 // 移除其他節點的選中狀態
                 this.treeContainer.querySelectorAll('.key-node.selected').forEach(node => {
                     if (node !== keyNode) {
@@ -204,13 +215,18 @@ class TreeViewBuilder {
                 // 呼叫選擇處理函數
                 const key = keyNode.dataset.key;
                 const connectionId = keyNode.dataset.connectionId;
-                console.log('Key node data:', { key, connectionId });
+                console.log('TreeViewBuilder: Key node data:', { 
+                    key, 
+                    connectionId,
+                    hasKey: !!key,
+                    hasConnectionId: !!connectionId
+                });
                 
                 if (key && connectionId && onKeySelect) {
-                    console.log('Calling onKeySelect handler');
+                    console.log('TreeViewBuilder: Calling onKeySelect handler');
                     onKeySelect(key, connectionId);
                 } else {
-                    console.warn('Missing key data or handler:', { 
+                    console.warn('TreeViewBuilder: Missing key data or handler:', { 
                         hasKey: !!key, 
                         hasConnectionId: !!connectionId, 
                         hasHandler: !!onKeySelect 

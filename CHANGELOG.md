@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2025-01-23
+
+### Changed
+- 改進 Redis 功能
+  - 優化伺服器管理介面
+  - 強化操作選單功能
+  - 改進使用者體驗
+
 ## [1.2.5] - 2025-01-16
 
 ### Added
