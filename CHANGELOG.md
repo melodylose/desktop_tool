@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.7] - 2025-02-10
+
+### Added
+- 強化 MQTT 功能
+  - 新增操作狀態通知
+    - 連線成功/失敗提示
+    - 訂閱成功提示
+    - 訊息發布成功提示
+  - 改進使用者介面
+    - 自動填充預設連接埠 1883
+    - 訂閱後自動禁用主題輸入框
+    - 訊息列表改為白色背景提升可讀性
+  - 優化程式架構
+    - 分離 UI 和邏輯層
+    - 完善錯誤處理機制
+    - 加強多語系支援
+
 ## [1.2.6] - 2025-01-23
 
 ### Changed

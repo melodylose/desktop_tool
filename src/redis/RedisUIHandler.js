@@ -5,6 +5,7 @@ const ConnectionManager = require('./ConnectionManager');
 const ServerContextMenuHandler = require('./handlers/ServerContextMenuHandler');
 const KeyContextMenuHandler = require('./handlers/KeyContextMenuHandler');
 const DialogManager = require('./dialogs/DialogManager');
+const i18next = require('i18next');
 
 class RedisUIHandler {
     constructor(redisOperations) {
@@ -369,12 +370,18 @@ class RedisUIHandler {
                 this.modal.hide();
                 this.uiStateManager.updateButtonStates(true);
                 this.uiStateManager.showConnectedState();
-                this.uiStateManager.showNotification('連線成功', 'success');
+                this.uiStateManager.showNotification(
+                    i18next.t('redis.server.success.created'),
+                    'success'
+                );
             }
         } catch (error) {
             console.error('Connection failed:', error);
             this.uiStateManager.showNormalState();
-            this.uiStateManager.showNotification('連線失敗: ' + error.message, 'error');
+            this.uiStateManager.showNotification(
+                i18next.t('redis.server.error.connection', { message: error.message }),
+                'error'
+            );
         }
     }
 
@@ -386,7 +393,7 @@ class RedisUIHandler {
             this.uiStateManager.showNormalState();
             this.uiStateManager.showNotification('已斷開連線', 'success');
         } else {
-            this.uiStateManager.showNotification('斷開連線失敗: ' + result.error);
+            this.uiStateManager.showNotification('斷開連線失敗: ' + result.error, 'error');
         }
     }
 
@@ -409,7 +416,7 @@ class RedisUIHandler {
             await this.redisOperations.reconnectToServer(connectionId);
             
             // 連線成功
-            this.uiStateManager.showNotification('success', '重新連線成功！');
+            this.uiStateManager.showNotification('重新連線成功！', 'success');
             
             // 更新狀態指示器
             if (statusIndicator) {
@@ -426,13 +433,15 @@ class RedisUIHandler {
         } catch (error) {
             console.error('Error reconnecting to server:', error);
             // 顯示錯誤訊息
-            this.uiStateManager.showNotification('error', `重新連線失敗: ${error.message}`);
+            this.uiStateManager.showNotification(`重新連線失敗: ${error.message}`, `error`);
             
             // 更新UI狀態為錯誤
-            const statusIndicator = serverNode.querySelector('.connection-status');
-            if (statusIndicator) {
-                statusIndicator.className = 'connection-status error';
-                statusIndicator.title = `重新連線失敗: ${error.message}`;
+            if (serverNode) {
+                const statusIndicator = serverNode.querySelector('.connection-status');
+                if (statusIndicator) {
+                    statusIndicator.className = 'connection-status error';
+                    statusIndicator.title = `重新連線失敗: ${error.message}`;
+                }
             }
         }
     }
@@ -460,7 +469,7 @@ class RedisUIHandler {
             
         } catch (error) {
             console.error('Error disconnecting from server:', error);
-            this.showNotification('error', `斷開連線失敗: ${error.message}`);
+            this.uiStateManager.showNotification('斷開連線失敗: ' + error.message, 'error');
         }
     }
 
@@ -508,7 +517,7 @@ class RedisUIHandler {
             }
         } catch (error) {
             console.error('Error refreshing keys:', error);
-            this.uiStateManager.showNotification(`無法獲取鍵值列表: ${error.message}`);
+            this.uiStateManager.showNotification(`無法獲取鍵值列表: ${error.message}`, 'error');
             throw error;
         }
     }
@@ -797,7 +806,7 @@ class RedisUIHandler {
                 await this.refreshKeys();
             } catch (error) {
                 console.error('Error switching connection:', error);
-                this.uiStateManager.showNotification(`切換伺服器失敗: ${error.message}`);
+                this.uiStateManager.showNotification(`切換伺服器失敗: ${error.message}`, 'error');
                 serverNode.classList.remove('expanded');
                 expandIcon.innerHTML = '▶';
                 keysContainer.style.display = 'none';
@@ -823,7 +832,7 @@ class RedisUIHandler {
         if (result.success) {
             this.displayKeyContent(result.info);
         } else {
-            this.uiStateManager.showNotification('無法取得鍵值資訊: ' + result.error);
+            this.uiStateManager.showNotification('無法取得鍵值資訊: ' + result.error, 'error');
         }
     }
 
@@ -851,7 +860,7 @@ class RedisUIHandler {
 
         if (!keyName || !keyValue) {
             console.warn('Missing key name or value');
-            this.uiStateManager.showNotification(!keyName ? '請輸入鍵名' : '請輸入值');
+            this.uiStateManager.showNotification(!keyName ? '請輸入鍵名' : '請輸入值', 'warning');
             return;
         }
 
@@ -865,7 +874,7 @@ class RedisUIHandler {
 
             if (!currentConnection || !currentConnection.client) {
                 console.error('No current connection available');
-                this.uiStateManager.showNotification('沒有可用的連線');
+                this.uiStateManager.showNotification('沒有可用的連線', 'error');
                 return;
             }
 
@@ -887,11 +896,11 @@ class RedisUIHandler {
                 this.uiStateManager.showNotification('鍵值已儲存', 'success');
             } else {
                 console.error('Failed to save key:', result.error);
-                this.uiStateManager.showNotification('儲存失敗: ' + result.error);
+                this.uiStateManager.showNotification('儲存失敗: ' + result.error, 'error');
             }
         } catch (error) {
             console.error('Error saving key:', error);
-            this.uiStateManager.showNotification('無效的值格式: ' + error.message);
+            this.uiStateManager.showNotification('無效的值格式: ' + error.message, 'error');
         }
     }
 
@@ -905,7 +914,7 @@ class RedisUIHandler {
 
         if (!keyName || !keyValue) {
             console.warn('Missing key name or value');
-            this.uiStateManager.showNotification(!keyName ? '請輸入鍵名' : '請輸入值');
+            this.uiStateManager.showNotification(!keyName ? '請輸入鍵名' : '請輸入值', 'warning');
             return;
         }
 
@@ -919,7 +928,7 @@ class RedisUIHandler {
 
             if (!currentConnection || !currentConnection.client) {
                 console.error('No current connection available');
-                this.uiStateManager.showNotification('沒有可用的連線');
+                this.uiStateManager.showNotification('沒有可用的連線', 'error');
                 return;
             }
 
@@ -932,11 +941,11 @@ class RedisUIHandler {
                 this.uiStateManager.showNotification('鍵值已儲存', 'success');
             } else {
                 console.error('Failed to save key:', result.error);
-                this.uiStateManager.showNotification('儲存失敗: ' + result.error);
+                this.uiStateManager.showNotification('儲存失敗: ' + result.error, 'error');
             }
         } catch (error) {
             console.error('Error saving key:', error);
-            this.uiStateManager.showNotification('無效的值格式: ' + error.message);
+            this.uiStateManager.showNotification('無效的值格式: ' + error.message, 'error');
         }
     }
 

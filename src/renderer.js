@@ -1,7 +1,7 @@
 // 載入模組
 const { ipcRenderer } = require('electron');
 const ModbusHandler = require('./modbusOperations');
-const MqttHandler = require('./mqttOperations');
+const MqttHandler = require('./mqtt/index');
 const FtpHandler = require('./ftp/index');
 const RedisHandler = require('./redis/index');
 const { translationManager } = require('./js/translationManager');

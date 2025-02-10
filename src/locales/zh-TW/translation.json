@@ -15,6 +15,8 @@
     "disconnected": "已中斷連線",
     "error": "錯誤",
     "success": "成功",
+    "warning": "警告",
+    "info": "提示",
     "confirm": "確定"
   },
   "home": {
@@ -117,7 +119,16 @@
     "portPlaceholder": "Port",
     "topicPlaceholder": "Topic",
     "messagePlaceholder": "訊息",
-    "messageList": "訊息列表"
+    "messageList": "訊息列表",
+    "error": {
+      "connection_failed": "MQTT連線失敗: {{message}}",
+      "client_creation_failed": "MQTT客戶端創建失敗: {{message}}"
+    },
+    "success": {
+      "connected": "MQTT連線成功",
+      "subscribed": "成功訂閱主題: {{topic}}",
+      "published": "訊息已發布至主題: {{topic}}"
+    }
   },
   "ftp": {
     "title": "FTP 通訊",
@@ -163,7 +174,7 @@
   },
   "redis": {
     "title": "Redis 管理",
-    "description": "連接並管理 Redis 資料庫，支援所有資料類型的操作。提供樹狀瀏覽介面。",
+    "description": "連接並管理 Redis 資料庫，支援所有資料類型操作。提供樹狀瀏覽介面。",
     "server": {
       "title": "Redis 伺服器",
       "add": "新增 Redis 伺服器",
@@ -182,7 +193,13 @@
       "remove": "移除伺服器",
       "refresh": "重新整理",
       "confirmDelete": "確認刪除伺服器",
-      "confirmDeleteMessage": "確定要刪除此伺服器連線嗎？此操作無法復原。"
+      "confirmDeleteMessage": "確定要刪除此伺服器連線嗎？此操作無法復原。",
+      "success": {
+        "created": "Redis 伺服器建立成功"
+      },
+      "error": {
+        "connection": "連線失敗: {{message}}"
+      }
     },
     "keyManagement": {
       "title": "鍵值管理",

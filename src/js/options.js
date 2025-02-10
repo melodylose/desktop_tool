@@ -2,6 +2,7 @@
 const { ipcRenderer } = require('electron');
 const { translationManager, i18next } = require('./translationManager');
 const themeManager = require('./themeManager');
+const NotificationManager = require('./NotificationManager');
 
 // 設定頁面初始化
 function initializeOptionsPage() {
@@ -79,8 +80,17 @@ function initializeAutoUpdateSetting() {
     autoUpdateCheckbox.checked = autoUpdate;
 
     // 監聽自動更新設定變更事件
-    autoUpdateCheckbox.addEventListener('change', (event) => {
-        localStorage.setItem('autoUpdate', event.target.checked);
+    autoUpdateCheckbox.addEventListener('change', async (event) => {
+        try {
+            localStorage.setItem('autoUpdate', event.target.checked);
+            // 如果需要同步到主進程，可以加入這段程式碼
+            // await ipcRenderer.invoke('set-auto-update', event.target.checked);
+        } catch (error) {
+            console.error('Failed to save auto-update setting:', error);
+            NotificationManager.show(i18next.t('settings.updateError'), 'error');
+            // 回復checkbox狀態
+            event.target.checked = !event.target.checked;
+        }
     });
 }
 
@@ -105,17 +115,20 @@ async function initializeVersionInfo() {
                     checkUpdateBtn.textContent = i18next.t('settings.checking');
 
                     const updateResult = await ipcRenderer.invoke('check-for-updates');
-
-                    // 修改這裡的判斷邏輯
-                    if (updateResult.updateAvailable) {  // 使用 updateAvailable 而不是 hasUpdate
-                        console.log('Update available:', updateResult);
-                        // 不要顯示 alert，因為 main process 會處理對話框
-                    } else {
-                        alert(i18next.t('settings.noUpdate'));
+                    
+                    // 只在沒有可用更新時顯示提示
+                    if (!updateResult.updateAvailable) {
+                        NotificationManager.show(i18next.t('settings.noUpdate'), 'info');
                     }
+                    // 不需要處理 updateAvailable 的情況，因為 main process 會處理對話框
                 } catch (error) {
                     console.error('Error checking for updates:', error);
-                    alert(i18next.t('settings.updateError'));
+                    // 根據錯誤類型顯示不同的錯誤訊息
+                    if (error && error.message && error.message.includes('settings')) {
+                        NotificationManager.show(i18next.t('settings.updateError'), 'error'); // 設定相關錯誤
+                    } else {
+                        NotificationManager.show(i18next.t('settings.updateCheckError'), 'error'); // 檢查更新相關錯誤
+                    }
                 } finally {
                     checkUpdateBtn.disabled = false;
                     checkUpdateBtn.textContent = i18next.t('settings.checkUpdate');
@@ -150,7 +163,7 @@ async function initializeVersionInfo() {
                 checkUpdateBtn.disabled = false;
                 checkUpdateBtn.textContent = i18next.t('settings.checkUpdate');
             }
-            alert(i18next.t('settings.updateCheckError'));
+            // alert(i18next.t('settings.updateCheckError'));
         });
 
 
