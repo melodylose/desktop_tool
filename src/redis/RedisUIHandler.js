@@ -409,19 +409,19 @@ class RedisUIHandler {
             const statusIndicator = serverNode.querySelector('.connection-status');
             if (statusIndicator) {
                 statusIndicator.className = 'connection-status connecting';
-                statusIndicator.title = '正在重新連線...';
+                statusIndicator.title = i18next.t('redis.server.reconnecting');
             }
 
             // 嘗試重新連線
             await this.redisOperations.reconnectToServer(connectionId);
             
             // 連線成功
-            this.uiStateManager.showNotification('重新連線成功！', 'success');
+            this.uiStateManager.showNotification(i18next.t('redis.server.reconnectSuccess'), 'success');
             
             // 更新狀態指示器
             if (statusIndicator) {
                 statusIndicator.className = 'connection-status connected';
-                statusIndicator.title = '已連線';
+                statusIndicator.title = i18next.t('redis.server.connected');
             }
             
             // 只在連線成功時更新樹狀圖
@@ -433,14 +433,14 @@ class RedisUIHandler {
         } catch (error) {
             console.error('Error reconnecting to server:', error);
             // 顯示錯誤訊息
-            this.uiStateManager.showNotification(`重新連線失敗: ${error.message}`, `error`);
+            this.uiStateManager.showNotification(i18next.t('redis.server.reconnectFailed', { message: error.message }), 'error');
             
             // 更新UI狀態為錯誤
             if (serverNode) {
                 const statusIndicator = serverNode.querySelector('.connection-status');
                 if (statusIndicator) {
                     statusIndicator.className = 'connection-status error';
-                    statusIndicator.title = `重新連線失敗: ${error.message}`;
+                    statusIndicator.title = i18next.t('redis.server.reconnectFailed', { message: error.message });
                 }
             }
         }

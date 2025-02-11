@@ -187,6 +187,9 @@
       "remove": "Remove Server",
       "refresh": "Refresh",
       "reconnect": "Reconnect",
+      "reconnecting": "Reconnecting...",
+      "reconnectSuccess": "Reconnection successful!",
+      "reconnectFailed": "Reconnection failed: {{message}}",
       "confirmDelete": "Confirm Server Deletion",
       "confirmDeleteMessage": "Are you sure you want to delete this server connection? This action cannot be undone.",
       "success": {
